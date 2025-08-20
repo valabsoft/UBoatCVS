@@ -1,0 +1,2 @@
+C:\Qt\6.9.0\mingw_64\bin\windeployqt "src\\build\\Release\\UBoatCVSLibrary\\release\\UBoatCVSLibrary.dll"
+C:\Qt\6.9.0\mingw_64\bin\windeployqt "src\\build\\Release\\UBoatCVSWorkstation\\release\\UBoatCVSWorkstation.exe"
