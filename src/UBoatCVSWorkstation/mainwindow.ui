@@ -17,27 +17,39 @@
    <widget class="QGroupBox" name="groupBoxHorizontal">
     <property name="geometry">
      <rect>
-      <x>20</x>
+      <x>10</x>
       <y>490</y>
-      <width>771</width>
+      <width>781</width>
       <height>100</height>
      </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::LayoutDirection::LeftToRight</enum>
     </property>
     <property name="title">
      <string/>
     </property>
-    <widget class="QWidget" name="">
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+    <widget class="QWidget" name="layoutWidget">
      <property name="geometry">
       <rect>
        <x>10</x>
        <y>10</y>
-       <width>260</width>
+       <width>761</width>
        <height>82</height>
       </rect>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout">
+     <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0,0">
       <item>
-       <spacer name="horizontalSpacer_2">
+       <spacer name="horizontalSpacerLeft">
         <property name="orientation">
          <enum>Qt::Orientation::Horizontal</enum>
         </property>
@@ -76,7 +88,7 @@
        </widget>
       </item>
       <item>
-       <spacer name="horizontalSpacer">
+       <spacer name="horizontalSpacerRight">
         <property name="orientation">
          <enum>Qt::Orientation::Horizontal</enum>
         </property>
@@ -97,11 +109,14 @@
       <x>690</x>
       <y>10</y>
       <width>100</width>
-      <height>441</height>
+      <height>471</height>
      </rect>
     </property>
     <property name="title">
      <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignTop</set>
     </property>
     <widget class="QWidget" name="layoutWidget">
      <property name="geometry">
@@ -109,7 +124,7 @@
        <x>10</x>
        <y>10</y>
        <width>82</width>
-       <height>421</height>
+       <height>451</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
@@ -117,7 +132,7 @@
        <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
       </property>
       <item>
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="pbCamera">
         <property name="minimumSize">
          <size>
           <width>80</width>
@@ -125,12 +140,12 @@
          </size>
         </property>
         <property name="text">
-         <string>PushButton</string>
+         <string>CAMERA</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton_2">
+       <widget class="QPushButton" name="pbPacket">
         <property name="minimumSize">
          <size>
           <width>80</width>
@@ -138,7 +153,7 @@
          </size>
         </property>
         <property name="text">
-         <string>PushButton</string>
+         <string>PACKET</string>
         </property>
        </widget>
       </item>
@@ -161,7 +176,7 @@
          <enum>Qt::Orientation::Vertical</enum>
         </property>
         <property name="sizeType">
-         <enum>QSizePolicy::Policy::Fixed</enum>
+         <enum>QSizePolicy::Policy::Expanding</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
