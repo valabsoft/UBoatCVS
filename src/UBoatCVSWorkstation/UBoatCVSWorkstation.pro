@@ -11,11 +11,14 @@ CONFIG += c++17
 SOURCES += \
     applicationsettings.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    uboatmodel.cpp
 
 HEADERS += \
+    applicationcommon.h \
     applicationsettings.h \
-    mainwindow.h
+    mainwindow.h \
+    uboatmodel.h
 
 FORMS += \
     mainwindow.ui
@@ -30,3 +33,6 @@ else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../UBoatCVSLibrary/
 
 INCLUDEPATH += $$PWD/../UBoatCVSLibrary
 DEPENDPATH += $$PWD/../UBoatCVSLibrary
+
+RESOURCES += \
+    resources.qrc

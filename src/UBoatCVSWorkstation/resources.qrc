@@ -1,0 +1,22 @@
+<RCC>
+    <qresource prefix="/">
+        <file>img/button_arrow_left_icon.png</file>
+        <file>img/button_arrow_right_icon.png</file>
+        <file>img/button_off_icon.png</file>
+        <file>img/button_on_icon.png</file>
+        <file>img/button_settings_icon.png</file>
+        <file>img/button_settings_mouseover_icon.png</file>
+        <file>img/button_trash_icon.png</file>
+        <file>img/button_trash_mouseover_icon.png</file>
+        <file>img/button_video_icon.png</file>
+        <file>img/button_video_mouseover_icon.png</file>
+        <file>img/button_camera_icon.png</file>
+        <file>img/button_camera_mouseover_icon.png</file>
+        <file>img/button_earth_globe_internet_browser_world_icon.png</file>
+        <file>img/button_earth_globe_internet_browser_world_mouse_over_icon.png</file>
+        <file>img/button_location_map_pin_icon.png</file>
+        <file>img/button_location_map_pin_mouseover_icon.png</file>
+        <file>img/button_paperplane_paper plane_icon.png</file>
+        <file>img/button_paperplane_paper plane_mouseover_icon.png</file>
+    </qresource>
+</RCC>

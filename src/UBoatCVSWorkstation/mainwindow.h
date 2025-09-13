@@ -6,6 +6,8 @@
 #include <QMessageBox>
 
 #include "applicationsettings.h"
+#include "applicationcommon.h"
+#include "uboatmodel.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -27,6 +29,7 @@ public:
     Q_ENUM(ConnectionStatus)
 
     void setGeometry();
+    void setStyle(Theme theme);
     void moveWindowToCenter();
 
     void setCameraSatatus(ConnectionStatus cameraStatus);
@@ -42,6 +45,7 @@ private:
 private:
     Ui::MainWindow *ui;
     ApplicationSettings _appSet; // Уставки приложения
+    UBoatModel *_model;
 
 signals:
     void cameraStatusChanged(ConnectionStatus);

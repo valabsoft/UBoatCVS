@@ -1,0 +1,9 @@
+#ifndef APPLICATIONCOMMON_H
+#define APPLICATIONCOMMON_H
+
+enum Theme {
+    WHITE,
+    BLACK
+};
+
+#endif // APPLICATIONCOMMON_H
