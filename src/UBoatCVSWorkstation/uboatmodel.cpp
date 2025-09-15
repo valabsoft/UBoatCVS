@@ -2,23 +2,23 @@
 
 UBoatModel::UBoatModel()
 {
-    _cameraIsConnected = false;
-    _packetIsConnected = false;
+    _cameraStatus = ConnectionStatus::OFF;
+    _packetStatus = ConnectionStatus::OFF;
 }
 
-void UBoatModel::setCameraIsConnected(bool isconnected)
+void UBoatModel::setCameraStatus(ConnectionStatus status)
 {
-    _cameraIsConnected = isconnected;
+    _cameraStatus = status;
 }
-void UBoatModel::setPacketIsConnected(bool isconnected)
+void UBoatModel::setPacketStatus(ConnectionStatus status)
 {
-    _packetIsConnected = isconnected;
+    _packetStatus = status;
 }
-bool UBoatModel::getCameraIsConnected()
+ConnectionStatus UBoatModel::getCameraStatus()
 {
-    return _cameraIsConnected;
+    return _cameraStatus;
 }
-bool UBoatModel::getPacketIsConnected()
+ConnectionStatus UBoatModel::getPacketStatus()
 {
-    return _packetIsConnected;
+    return _packetStatus;
 }

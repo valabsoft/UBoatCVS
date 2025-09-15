@@ -6,4 +6,10 @@ enum Theme {
     BLACK
 };
 
+enum ConnectionStatus {
+    ON,
+    OFF,
+    UNKNOWN
+};
+
 #endif // APPLICATIONCOMMON_H

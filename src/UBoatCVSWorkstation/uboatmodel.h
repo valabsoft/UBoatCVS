@@ -1,17 +1,19 @@
 #ifndef UBOATMODEL_H
 #define UBOATMODEL_H
 
+#include "applicationcommon.h"
+
 class UBoatModel
 {
 public:
     UBoatModel();
-    void setCameraIsConnected(bool isconnected);
-    void setPacketIsConnected(bool isconnected);
-    bool getCameraIsConnected();
-    bool getPacketIsConnected();
+    void setCameraStatus(ConnectionStatus isconnected);
+    void setPacketStatus(ConnectionStatus isconnected);
+    ConnectionStatus getCameraStatus();
+    ConnectionStatus getPacketStatus();
 private:
-    bool _cameraIsConnected;
-    bool _packetIsConnected;
+    ConnectionStatus _cameraStatus;
+    ConnectionStatus _packetStatus;
 };
 
 #endif // UBOATMODEL_H

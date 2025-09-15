@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QScreen>
 #include <QMessageBox>
+#include <QDebug>
 
 #include "applicationsettings.h"
 #include "applicationcommon.h"
@@ -18,15 +19,10 @@ QT_END_NAMESPACE
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
-    Q_PROPERTY(ConnectionStatus CameraSatatus READ CameraSatatus WRITE setCameraSatatus NOTIFY cameraStatusChanged)
-    Q_PROPERTY(ConnectionStatus PacketSatatus READ PacketSatatus WRITE setPacketSatatus NOTIFY packetStatusChanged)
 
 public:
     MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
-
-    enum ConnectionStatus { ON, OFF, UNKNOWN };
-    Q_ENUM(ConnectionStatus)
+    ~MainWindow();    
 
     void setGeometry();
     void setButtonIcons();
@@ -34,14 +30,11 @@ public:
     void moveWindowToCenter();
 
     void setCameraSatatus(ConnectionStatus cameraStatus);
-    ConnectionStatus CameraSatatus() const;
-
     void setPacketSatatus(ConnectionStatus packetStatus);
-    ConnectionStatus PacketSatatus() const;
 
 private:
-    ConnectionStatus _cameraStatus;
-    ConnectionStatus _packetStatus;
+    //ConnectionStatus _cameraStatus;
+    //ConnectionStatus _packetStatus;
 
 private:
     Ui::MainWindow *ui;

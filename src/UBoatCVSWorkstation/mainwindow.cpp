@@ -7,9 +7,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    _model = new UBoatModel();  // Дата-модель - не используется
-    _cameraStatus = ConnectionStatus::OFF;
-    _packetStatus = ConnectionStatus::OFF;
+    _model = new UBoatModel();
 
     // Заголовок окна
     setWindowTitle("БЭК СТЗ :: AРМ Оператора :: " + _appSet.getAppVersion());
@@ -137,8 +135,6 @@ void MainWindow::setStyle(Theme theme) {
     default:
         break;
     }
-
-
 }
 
 void MainWindow::moveWindowToCenter()
@@ -153,53 +149,34 @@ void MainWindow::moveWindowToCenter()
 
 void MainWindow::setCameraSatatus(ConnectionStatus cameraStatus)
 {
-    if (_cameraStatus == cameraStatus)
+    if (_model->getCameraStatus() == cameraStatus)
         return;
 
-    _cameraStatus = cameraStatus;
+    _model->setCameraStatus(cameraStatus);
     emit cameraStatusChanged(cameraStatus);
 }
 
 void MainWindow::setPacketSatatus(ConnectionStatus packetStatus)
 {
-    if (_packetStatus == packetStatus)
+    if (_model->getPacketStatus() == packetStatus)
         return;
 
-    _packetStatus = packetStatus;
+    _model->setPacketStatus(packetStatus);
     emit packetStatusChanged(packetStatus);
-}
-
-MainWindow::ConnectionStatus MainWindow::CameraSatatus() const
-{
-    return _cameraStatus;
-}
-
-MainWindow::ConnectionStatus MainWindow::PacketSatatus() const
-{
-    return _packetStatus;
 }
 
 void MainWindow::onCameraButtonClicked()
 {
-    if (_cameraStatus == ConnectionStatus::OFF)
-    {
-        _cameraStatus = ConnectionStatus::ON;
-    }
-    else
-    {
-        _cameraStatus = ConnectionStatus::OFF;
-    }
-
-    switch (_cameraStatus)
+    switch (_model->getCameraStatus())
     {
     case ConnectionStatus::ON:
-        //setCameraSatatus(ConnectionStatus::OFF);
-        ui->pbCamera->setIcon(QIcon(":/img/button_on_icon.png"));
+        setCameraSatatus(ConnectionStatus::OFF);
+        ui->pbCamera->setIcon(QIcon(":/img/button_off_icon.png"));
         ui->pbCamera->setIconSize(QSize(64, 64));
         break;
     case ConnectionStatus::OFF:
-        //setCameraSatatus(ConnectionStatus::ON);
-        ui->pbCamera->setIcon(QIcon(":/img/button_off_icon.png"));
+        setCameraSatatus(ConnectionStatus::ON);
+        ui->pbCamera->setIcon(QIcon(":/img/button_on_icon.png"));
         ui->pbCamera->setIconSize(QSize(64, 64));
         break;
     case ConnectionStatus::UNKNOWN:
@@ -209,25 +186,16 @@ void MainWindow::onCameraButtonClicked()
 
 void MainWindow::onPacketButtonClicked()
 {
-    if (_packetStatus == ConnectionStatus::OFF)
-    {
-        _packetStatus = ConnectionStatus::ON;
-    }
-    else
-    {
-        _packetStatus = ConnectionStatus::OFF;
-    }
-
-    switch (_packetStatus)
+    switch (_model->getPacketStatus())
     {
     case ConnectionStatus::ON:
-        //setPacketSatatus(ConnectionStatus::ON);
-        ui->pbPacket->setIcon(QIcon(":/img/button_on_icon.png"));
+        setPacketSatatus(ConnectionStatus::OFF);
+        ui->pbPacket->setIcon(QIcon(":/img/button_off_icon.png"));
         ui->pbPacket->setIconSize(QSize(64, 64));
         break;
     case ConnectionStatus::OFF:
-        //setPacketSatatus(ConnectionStatus::OFF);
-        ui->pbPacket->setIcon(QIcon(":/img/button_off_icon.png"));
+        setPacketSatatus(ConnectionStatus::ON);
+        ui->pbPacket->setIcon(QIcon(":/img/button_on_icon.png"));
         ui->pbPacket->setIconSize(QSize(64, 64));
         break;
     case ConnectionStatus::UNKNOWN:
@@ -237,36 +205,28 @@ void MainWindow::onPacketButtonClicked()
 
 void MainWindow::onCameraStatusChanged()
 {
-    ConnectionStatus status = this->CameraSatatus();
-
-    //if (status == ConnectionStatus::ON)
-    //{
-    //    QMessageBox msgBox;
-    //    msgBox.setText("ON");
-    //    msgBox.exec();
-    //}
-    //else
-    //{
-    //    QMessageBox msgBox;
-    //    msgBox.setText("OFF");
-    //    msgBox.exec();
-    //}
+    switch (_model->getCameraStatus()) {
+    case ConnectionStatus::OFF:
+        qDebug() << "onCameraStatusChanged(): OFF";
+        break;
+    case ConnectionStatus::ON:
+        qDebug() << "onCameraStatusChanged(): ON";
+        break;
+    default:
+        break;
+    }
 }
 
 void MainWindow::onPacketStatusChanged()
 {
-    ConnectionStatus status = this->PacketSatatus();
-
-    //if (status == ConnectionStatus::ON)
-    //{
-    //    QMessageBox msgBox;
-    //    msgBox.setText("ON");
-    //    msgBox.exec();
-    //}
-    //else
-    //{
-    //    QMessageBox msgBox;
-    //    msgBox.setText("OFF");
-    //    msgBox.exec();
-    //}
+    switch (_model->getPacketStatus()) {
+    case ConnectionStatus::OFF:
+        qDebug() << "onPacketStatusChanged(): OFF";
+        break;
+    case ConnectionStatus::ON:
+        qDebug() << "onPacketStatusChanged(): ON";
+        break;
+    default:
+        break;
+    }
 }
