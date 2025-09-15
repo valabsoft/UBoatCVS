@@ -29,6 +29,7 @@ public:
     Q_ENUM(ConnectionStatus)
 
     void setGeometry();
+    void setButtonIcons();
     void setStyle(Theme theme);
     void moveWindowToCenter();
 
