@@ -16,6 +16,11 @@ MainWindow::MainWindow(QWidget *parent)
     setStyle(Theme::BLACK); // Установка темы приложения
     setButtonIcons();       // Установка иконок
 
+    _videoTimer = new QTimer(this);
+    connect(_videoTimer, &QTimer::timeout, this, &MainWindow::onVideoTimer);
+
+    _capture = nullptr;
+
     // Сигналы
     connect(ui->pbCamera, &QPushButton::clicked, this, &MainWindow::onCameraButtonClicked);
     connect(ui->pbPacket, &QPushButton::clicked, this, &MainWindow::onPacketButtonClicked);
@@ -26,6 +31,15 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    if (!_videoTimer->isActive())
+        _videoTimer->stop();
+
+    if (_videoTimer)
+        delete _videoTimer;
+
+    if (_capture)
+        delete _capture;
+
     delete _model;
     delete ui;
 }
@@ -208,9 +222,51 @@ void MainWindow::onCameraStatusChanged()
     switch (_model->getCameraStatus()) {
     case ConnectionStatus::OFF:
         qDebug() << "onCameraStatusChanged(): OFF";
+
+        // Остановка таймера
+        if (_videoTimer->isActive())
+        {
+            _videoTimer->stop();
+            qDebug() << "Видеотаймер остановлен";
+        }
+
+        // Освобождение камеры
+        if (_capture)
+        {
+            _capture->release();
+            _capture = nullptr;
+            qDebug() << "Дескриптор камеры освобожден";
+        }
+
         break;
     case ConnectionStatus::ON:
         qDebug() << "onCameraStatusChanged(): ON";
+
+
+
+        // Захват камеры
+        if (!_capture)
+        {
+            _capture = new cv::VideoCapture(0);
+
+            qDebug() << "Дескриптор камеры создан";
+
+            if (!_capture->isOpened())
+            {
+                QMessageBox::critical(this, "Ошибка", "Не удалось открыть камеру!");
+                delete _capture;
+                _capture = nullptr;
+                return;
+            }
+        }
+
+        // Запускаем таймер
+        if (!_videoTimer->isActive())
+        {
+            _videoTimer->start(_appSet.VIDEO_TIMER_INTERVAL);
+            qDebug() << "Видеотаймер запущен";
+        }
+
         break;
     default:
         break;
@@ -229,4 +285,41 @@ void MainWindow::onPacketStatusChanged()
     default:
         break;
     }
+}
+
+void MainWindow::onVideoTimer()
+{
+    if (!_capture || !_capture->isOpened())
+    {
+        return;
+    }
+
+    cv::Mat frame;
+    *_capture >> frame;
+
+    if (frame.empty())
+    {
+        return;
+    }
+
+    // Конвертация BGR в RGB для Qt
+    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+
+    QImage image = cvMatToQImage(frame);
+    ui->labelCameraView->setPixmap(QPixmap::fromImage(image));
+
+}
+
+QImage MainWindow::cvMatToQImage(const cv::Mat &mat)
+{
+    if (mat.type() == CV_8UC3) {
+        return QImage(mat.data, mat.cols, mat.rows,
+                      static_cast<int>(mat.step), QImage::Format_RGB888);
+    }
+    else if (mat.type() == CV_8UC1) {
+        return QImage(mat.data, mat.cols, mat.rows,
+                      static_cast<int>(mat.step), QImage::Format_Grayscale8);
+    }
+
+    return QImage();
 }

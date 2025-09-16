@@ -5,10 +5,19 @@
 #include <QScreen>
 #include <QMessageBox>
 #include <QDebug>
+#include <QTimer>
+#include <QImage>
 
 #include "applicationsettings.h"
 #include "applicationcommon.h"
 #include "uboatmodel.h"
+
+#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -19,7 +28,6 @@ QT_END_NAMESPACE
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
-
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();    
@@ -33,13 +41,15 @@ public:
     void setPacketSatatus(ConnectionStatus packetStatus);
 
 private:
-    //ConnectionStatus _cameraStatus;
-    //ConnectionStatus _packetStatus;
+    void onVideoTimer();
+    QImage cvMatToQImage(const cv::Mat &mat);
 
 private:
     Ui::MainWindow *ui;
     ApplicationSettings _appSet; // Уставки приложения
     UBoatModel *_model;
+    QTimer *_videoTimer;
+    cv::VideoCapture *_capture;
 
 signals:
     void cameraStatusChanged(ConnectionStatus);
