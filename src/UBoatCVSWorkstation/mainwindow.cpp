@@ -269,7 +269,11 @@ void MainWindow::onCameraStatusChanged()
         // Захват камеры
         if (!_capture)
         {
-            _capture = new cv::VideoCapture(0);
+            _capture = new cv::VideoCapture(_appSet.CAMERA_ID, cv::CAP_DSHOW);
+            // Настраиваем параметры камеры
+            _capture->set(cv::CAP_PROP_FRAME_WIDTH, _appSet.CAMERA_WIDTH);
+            _capture->set(cv::CAP_PROP_FRAME_HEIGHT, _appSet.CAMERA_HEIGHT);
+            _capture->set(cv::CAP_PROP_FPS, _appSet.CAMERA_FPS);
 
             qDebug() << "Дескриптор камеры создан";
 
