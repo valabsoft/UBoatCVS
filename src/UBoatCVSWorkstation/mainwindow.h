@@ -40,6 +40,13 @@ public:
     void setCameraSatatus(ConnectionStatus cameraStatus);
     void setPacketSatatus(ConnectionStatus packetStatus);
 
+    // Команды для работы с терминалом
+    void terminalMessage(const QString &message, const QString &color = "#FFFFFF");
+    void terminalWarning(const QString &command);
+    void terminalInfo(const QString &output);
+    void terminalError(const QString &error);
+    void clearTerminal();
+
 private:
     void onVideoTimer();
     QImage cvMatToQImage(const cv::Mat &mat);
@@ -60,5 +67,6 @@ private slots:
     void onPacketButtonClicked();
     void onCameraStatusChanged();
     void onPacketStatusChanged();
+    void onResetButtonClicked();
 };
 #endif // MAINWINDOW_H

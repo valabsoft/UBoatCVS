@@ -24,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent)
     // Сигналы
     connect(ui->pbCamera, &QPushButton::clicked, this, &MainWindow::onCameraButtonClicked);
     connect(ui->pbPacket, &QPushButton::clicked, this, &MainWindow::onPacketButtonClicked);
+    connect(ui->pbResetTargets, &QPushButton::clicked, this, &MainWindow::onResetButtonClicked);
 
     connect(this, &MainWindow::cameraStatusChanged, this, &MainWindow::onCameraStatusChanged);
     connect(this, &MainWindow::packetStatusChanged, this, &MainWindow::onPacketStatusChanged);    
@@ -87,7 +88,7 @@ void MainWindow::setGeometry()
     setFixedSize(QSize(mainWindowW, mainWindowH));
 
     // Позиционирование панелей
-    ui->groupBoxInfo->setGeometry(
+    ui->groupBoxVerticalInfo->setGeometry(
         _appSet.BORDER_SIZE,
         _appSet.BORDER_SIZE,
         _appSet.PANEL_INFO_SIZE,
@@ -121,6 +122,10 @@ void MainWindow::setGeometry()
     ui->verticalLayout->setContentsMargins(10, 10, 10, 10);
     ui->verticalLayout->setSpacing(_appSet.BORDER_SIZE);
     ui->groupBoxVertical->setLayout(ui->verticalLayout);
+
+    ui->verticalLayoutInfo->setContentsMargins(10, 10, 10, 10);
+    ui->verticalLayoutInfo->setSpacing(_appSet.BORDER_SIZE);
+    ui->groupBoxVerticalInfo->setLayout(ui->verticalLayoutInfo);
 
     moveWindowToCenter();
 }
@@ -208,6 +213,19 @@ void MainWindow::setStyle(Theme theme) {
     default:
         break;
     }
+
+    // Стиль окна терминала
+    ui->plainTextEdit->setReadOnly(true);
+    ui->plainTextEdit->setFont(QFont("Consolas", 10)); // Моноширинный шрифт
+    ui->plainTextEdit->setStyleSheet(
+        "QPlainTextEdit {"
+        "    background-color: #000000;"
+        "    color: #00FF00;"
+        "    border: 1px solid #333;"
+        "    font-family: 'Courier New', monospace;"
+        "    selection-background-color: #555;"
+        "}"
+        );
 }
 
 void MainWindow::moveWindowToCenter()
@@ -276,17 +294,25 @@ void MainWindow::onPacketButtonClicked()
     }
 }
 
+void MainWindow::onResetButtonClicked()
+{
+    clearTerminal();
+    terminalError("Выполнен сброс");
+}
+
 void MainWindow::onCameraStatusChanged()
 {
     switch (_model->getCameraStatus()) {
     case ConnectionStatus::OFF:
         qDebug() << "onCameraStatusChanged(): OFF";
+        terminalInfo("onCameraStatusChanged(): OFF");
 
         // Остановка таймера
         if (_videoTimer->isActive())
         {
             _videoTimer->stop();
             qDebug() << "Видеотаймер остановлен";
+            terminalWarning("Видеотаймер остановлен");
         }
 
         // Освобождение камеры
@@ -295,11 +321,13 @@ void MainWindow::onCameraStatusChanged()
             _capture->release();
             _capture = nullptr;
             qDebug() << "Дескриптор камеры освобожден";
+            terminalWarning("Дескриптор камеры освобожден");
         }
 
         break;
     case ConnectionStatus::ON:
         qDebug() << "onCameraStatusChanged(): ON";
+        terminalInfo("onCameraStatusChanged(): ON");
 
         // Захват камеры
         if (!_capture)
@@ -311,6 +339,7 @@ void MainWindow::onCameraStatusChanged()
             _capture->set(cv::CAP_PROP_FPS, _appSet.CAMERA_FPS);
 
             qDebug() << "Дескриптор камеры создан";
+            terminalWarning("Дескриптор камеры создан");
 
             if (!_capture->isOpened())
             {
@@ -324,8 +353,9 @@ void MainWindow::onCameraStatusChanged()
         // Запускаем таймер
         if (!_videoTimer->isActive())
         {
-            _videoTimer->start(_appSet.VIDEO_TIMER_INTERVAL);
+            _videoTimer->start(_appSet.VIDEO_TIMER_INTERVAL);            
             qDebug() << "Видеотаймер запущен";
+            terminalWarning("Видеотаймер запущен");
         }
 
         break;
@@ -339,9 +369,11 @@ void MainWindow::onPacketStatusChanged()
     switch (_model->getPacketStatus()) {
     case ConnectionStatus::OFF:
         qDebug() << "onPacketStatusChanged(): OFF";
+        terminalInfo("onPacketStatusChanged(): OFF");
         break;
     case ConnectionStatus::ON:
         qDebug() << "onPacketStatusChanged(): ON";
+        terminalInfo("onPacketStatusChanged(): ON");
         break;
     default:
         break;
@@ -383,4 +415,39 @@ QImage MainWindow::cvMatToQImage(const cv::Mat &mat)
     }
 
     return QImage();
+}
+
+// Команды для работы с терминалом
+void MainWindow::terminalMessage(const QString &message, const QString &color)
+{
+    QString formatted = QString("<span style='color: %1'>%2</span>")
+    .arg(color, message.toHtmlEscaped());
+
+    // Для большого объема текста лучше использовать QPlainTextEdit
+    ui->plainTextEdit->appendHtml(formatted);
+
+    // Автопрокрутка
+    QTextCursor cursor = ui->plainTextEdit->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    ui->plainTextEdit->setTextCursor(cursor);
+}
+
+void MainWindow::terminalWarning(const QString &command)
+{
+    terminalMessage("$ " + command, "#4CAF50"); // Зеленый для команд
+}
+
+void MainWindow::terminalInfo(const QString &output)
+{
+    terminalMessage("$ " + output, "#696969"); // Белый для вывода
+}
+
+void MainWindow::terminalError(const QString &error)
+{
+    terminalMessage("ERROR: " + error, "#E04343"); // Красный для ошибок
+}
+
+void MainWindow::clearTerminal()
+{
+    ui->plainTextEdit->clear();
 }
