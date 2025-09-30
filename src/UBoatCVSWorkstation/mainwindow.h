@@ -47,6 +47,16 @@ public:
     void terminalError(const QString &error);
     void clearTerminal();
 
+    // Отрисовка графических элементов
+    void roundedRectangle(
+        cv::Mat& src,
+        cv::Point topLeft,
+        cv::Point bottomRight,
+        const cv::Scalar lineColor,
+        const int thickness,
+        const int lineType,
+        const int cornerRadius);
+
 private:
     void onVideoTimer();
     QImage cvMatToQImage(const cv::Mat &mat);
@@ -57,6 +67,7 @@ private:
     UBoatModel *_model;
     QTimer *_videoTimer;
     cv::VideoCapture *_capture;
+    QImage _image;
 
 signals:
     void cameraStatusChanged(ConnectionStatus);
