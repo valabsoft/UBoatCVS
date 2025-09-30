@@ -293,7 +293,10 @@
      </rect>
     </property>
     <property name="text">
-     <string>CAMERA</string>
+     <string>КАМЕРА</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignCenter</set>
     </property>
    </widget>
   </widget>

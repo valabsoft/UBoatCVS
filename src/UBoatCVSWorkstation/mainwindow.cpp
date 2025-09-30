@@ -125,6 +125,26 @@ void MainWindow::setStyle(Theme theme) {
     {
 
     case Theme::WHITE:
+    {
+        ui->labelCameraView->setStyleSheet("QLabel {"
+                                           "border-style: solid;"
+                                           "border-width: 1px;"
+                                           "border-color: dimgrey;"
+                                           "color : dimgrey;"
+                                           "}");
+        ui->labelCameraView->setFont(fontLabel);
+
+        ui->lbCamera->setStyleSheet("color : dimgrey;");
+        ui->lbCamera->setFont(fontLabel);
+
+        ui->lbPacket->setStyleSheet("color : dimgrey;");
+        ui->lbPacket->setFont(fontLabel);
+
+        ui->lbSettings->setStyleSheet("color : dimgrey;");
+        ui->lbSettings->setFont(fontLabel);
+        break;
+    }
+
     case Theme::BLACK:
         // Цвет фона главного окна приложения
         this->setStyleSheet("background-color: black;");
@@ -133,7 +153,9 @@ void MainWindow::setStyle(Theme theme) {
                                            "border-style: solid;"
                                            "border-width: 1px;"
                                            "border-color: silver;"
+                                           "color : silver;"
                                            "}");
+        ui->labelCameraView->setFont(fontLabel);
 
         ui->lbCamera->setStyleSheet("background-color : black; color : silver;");
         ui->lbCamera->setFont(fontLabel);
