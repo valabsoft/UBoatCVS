@@ -78,35 +78,42 @@ void MainWindow::setButtonIcons()
 void MainWindow::setGeometry()
 {
     // Расчет размеров главного окна
-    int mainWindowW = _appSet.BORDER_SIZE * 3 +
-                      _appSet.CAMERA_WIDTH + _appSet.PANEL_SIZE;
+    int mainWindowW = _appSet.BORDER_SIZE * 4 +
+                      _appSet.CAMERA_WIDTH + _appSet.PANEL_TOOL_SIZE + _appSet.PANEL_INFO_SIZE;
     int mainWindowH = _appSet.BORDER_SIZE * 3 +
-                      _appSet.CAMERA_HEIGHT + _appSet.PANEL_SIZE;
+                      _appSet.CAMERA_HEIGHT + _appSet.PANEL_TOOL_SIZE;
 
     // Фиксируем размер окна и убираем иконку ресайза
     setFixedSize(QSize(mainWindowW, mainWindowH));
 
     // Позиционирование панелей
-    ui->groupBoxHorizontal->setGeometry(
+    ui->groupBoxInfo->setGeometry(
         _appSet.BORDER_SIZE,
+        _appSet.BORDER_SIZE,
+        _appSet.PANEL_INFO_SIZE,
+        _appSet.CAMERA_HEIGHT + _appSet.BORDER_SIZE + _appSet.PANEL_TOOL_SIZE);
+
+    ui->groupBoxHorizontal->setGeometry(
+        _appSet.BORDER_SIZE * 2 + _appSet.PANEL_INFO_SIZE,
         _appSet.BORDER_SIZE * 2 + _appSet.CAMERA_HEIGHT,
         _appSet.CAMERA_WIDTH,
-        _appSet.PANEL_SIZE);
+        _appSet.PANEL_TOOL_SIZE);
 
     ui->groupBoxVertical->setGeometry(
-        _appSet.BORDER_SIZE * 2 + _appSet.CAMERA_WIDTH,
+        _appSet.BORDER_SIZE * 3 + _appSet.CAMERA_WIDTH + _appSet.PANEL_INFO_SIZE,
         _appSet.BORDER_SIZE,
-        _appSet.PANEL_SIZE,
-        _appSet.CAMERA_HEIGHT + _appSet.BORDER_SIZE + _appSet.PANEL_SIZE);
+        _appSet.PANEL_TOOL_SIZE,
+        _appSet.CAMERA_HEIGHT + _appSet.BORDER_SIZE + _appSet.PANEL_TOOL_SIZE);
 
     // Позиционируем лейбл для вывода изображения
     ui->labelCameraView->setGeometry(
-        _appSet.BORDER_SIZE,
+        _appSet.BORDER_SIZE * 2 + _appSet.PANEL_INFO_SIZE,
         _appSet.BORDER_SIZE,
         _appSet.CAMERA_WIDTH,
         _appSet.CAMERA_HEIGHT);
 
     // Позиционирование Layouts
+
     ui->horizontalLayout->setContentsMargins(10, 10, 10, 10);
     ui->horizontalLayout->setSpacing(_appSet.BORDER_SIZE);
     ui->groupBoxHorizontal->setLayout(ui->horizontalLayout);
@@ -120,6 +127,9 @@ void MainWindow::setGeometry()
 
 void MainWindow::setStyle(Theme theme) {
     QFont fontLabel("GOST type A", 18, QFont::Bold);
+    QFont fontLabelTitle("GOST type A", 20, QFont::Bold);
+    QFont fontLabelSmall("GOST type A", 18, QFont::Bold);
+    QFont fontLabelBig("GOST type B", 54, QFont::Bold);
 
     switch(theme)
     {
@@ -142,6 +152,9 @@ void MainWindow::setStyle(Theme theme) {
 
         ui->lbSettings->setStyleSheet("color : dimgrey;");
         ui->lbSettings->setFont(fontLabel);
+
+        ui->lbReset->setStyleSheet("color : dimgrey;");
+        ui->lbReset->setFont(fontLabel);
         break;
     }
 
@@ -154,7 +167,7 @@ void MainWindow::setStyle(Theme theme) {
                                            "border-width: 1px;"
                                            "border-color: silver;"
                                            "color : silver;"
-                                           "}");
+                                           "}");        
         ui->labelCameraView->setFont(fontLabel);
 
         ui->lbCamera->setStyleSheet("background-color : black; color : silver;");
@@ -165,6 +178,30 @@ void MainWindow::setStyle(Theme theme) {
 
         ui->lbSettings->setStyleSheet("background-color : black; color : silver;");
         ui->lbSettings->setFont(fontLabel);
+
+        ui->lbReset->setStyleSheet("background-color : black; color : silver;");
+        ui->lbReset->setFont(fontLabel);
+
+        ui->lbInfoPanelTitle->setStyleSheet("background-color : black; color : silver;");
+        ui->lbInfoPanelTitle->setFont(fontLabelTitle);
+
+        ui->lbInfoPanelTargetTotal->setStyleSheet("background-color : black; color : dimgrey;");
+        ui->lbInfoPanelTargetTotal->setFont(fontLabelSmall);
+
+        ui->lbInfoPanelTargetTotalValue->setStyleSheet("background-color : black; color : '#3C66D9';");
+        ui->lbInfoPanelTargetTotalValue->setFont(fontLabelBig);
+
+        ui->lbInfoPanelTargetActive->setStyleSheet("background-color : black; color : dimgrey;");
+        ui->lbInfoPanelTargetActive->setFont(fontLabelSmall);
+
+        ui->lbInfoPanelTargetActiveValue->setStyleSheet("background-color : black; color : '#4CAF50';");
+        ui->lbInfoPanelTargetActiveValue->setFont(fontLabelBig);
+
+        ui->lbInfoPanelSpeed->setStyleSheet("background-color : black; color : dimgrey;");
+        ui->lbInfoPanelSpeed->setFont(fontLabelSmall);
+
+        ui->lbInfoPanelSpeedValue->setStyleSheet("background-color : black; color : silver;");
+        ui->lbInfoPanelSpeedValue->setFont(fontLabelBig);
 
         break;
 
@@ -263,8 +300,6 @@ void MainWindow::onCameraStatusChanged()
         break;
     case ConnectionStatus::ON:
         qDebug() << "onCameraStatusChanged(): ON";
-
-
 
         // Захват камеры
         if (!_capture)
