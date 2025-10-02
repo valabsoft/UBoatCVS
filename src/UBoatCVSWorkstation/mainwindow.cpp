@@ -8,9 +8,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     _model = new UBoatModel();
+    _appSet.load(); // Загрузка файла настроек
 
     // Заголовок окна
     setWindowTitle("БЭК СТЗ :: AРМ Оператора :: " + _appSet.getAppVersion());
+
+    // Иконка главного окна
+    setWindowIcon(QIcon(":/img/sight.png"));
 
     setGeometry();          // Геометрия окон
     setStyle(Theme::BLACK); // Установка темы приложения
@@ -25,6 +29,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->pbCamera, &QPushButton::clicked, this, &MainWindow::onCameraButtonClicked);
     connect(ui->pbPacket, &QPushButton::clicked, this, &MainWindow::onPacketButtonClicked);
     connect(ui->pbResetTargets, &QPushButton::clicked, this, &MainWindow::onResetButtonClicked);
+    connect(ui->pbSettings, &QPushButton::clicked, this, &MainWindow::onSettingsButtonClicked);
 
     connect(this, &MainWindow::cameraStatusChanged, this, &MainWindow::onCameraStatusChanged);
     connect(this, &MainWindow::packetStatusChanged, this, &MainWindow::onPacketStatusChanged);    
@@ -332,11 +337,22 @@ void MainWindow::onCameraStatusChanged()
         // Захват камеры
         if (!_capture)
         {
-            _capture = new cv::VideoCapture(_appSet.CAMERA_ID, cv::CAP_DSHOW);
-            // Настраиваем параметры камеры
-            _capture->set(cv::CAP_PROP_FRAME_WIDTH, _appSet.CAMERA_WIDTH);
-            _capture->set(cv::CAP_PROP_FRAME_HEIGHT, _appSet.CAMERA_HEIGHT);
-            _capture->set(cv::CAP_PROP_FPS, _appSet.CAMERA_FPS);
+            if (!_appSet.TEST_MODE)
+            {
+                _capture = new cv::VideoCapture(_appSet.CAMERA_ID, cv::CAP_DSHOW);
+                // Настраиваем параметры камеры
+                _capture->set(cv::CAP_PROP_FRAME_WIDTH, _appSet.CAMERA_WIDTH);
+                _capture->set(cv::CAP_PROP_FRAME_HEIGHT, _appSet.CAMERA_HEIGHT);
+                _capture->set(cv::CAP_PROP_FPS, _appSet.CAMERA_FPS);
+                _fps = _capture->get(cv::CAP_PROP_FPS);
+            }
+            else
+            {
+                _capture = new cv::VideoCapture("C:\\VID_20250501_082326_854_480.mp4", cv::CAP_FFMPEG);
+                _fps = _capture->get(cv::CAP_PROP_FPS);
+                _totalFrames = _capture->get(cv::CAP_PROP_FRAME_COUNT);
+            }
+
 
             qDebug() << "Дескриптор камеры создан";
             terminalWarning("Дескриптор камеры создан");
@@ -353,7 +369,15 @@ void MainWindow::onCameraStatusChanged()
         // Запускаем таймер
         if (!_videoTimer->isActive())
         {
-            _videoTimer->start(_appSet.VIDEO_TIMER_INTERVAL);            
+            if (!_appSet.TEST_MODE)
+            {
+                // _videoTimer->start(_appSet.VIDEO_TIMER_INTERVAL);
+                _videoTimer->start((int)(1000 / _fps));
+            }
+            else
+            {
+                _videoTimer->start((int)(1000 / _fps));
+            }
             qDebug() << "Видеотаймер запущен";
             terminalWarning("Видеотаймер запущен");
         }
@@ -382,13 +406,16 @@ void MainWindow::onPacketStatusChanged()
 
 void MainWindow::onVideoTimer()
 {
+    if (_appSet.TEST_MODE && _model->getPacketStatus() == ConnectionStatus::ON)
+        return;
+
     if (!_capture || !_capture->isOpened())
     {
         return;
     }
 
     cv::Mat frame;
-    *_capture >> frame;
+    *_capture >> frame; // Читаем следующий фрейм
 
     if (frame.empty())
     {
@@ -407,191 +434,195 @@ void MainWindow::onVideoTimer()
     int X0 = _appSet.CAMERA_WIDTH / 2;
     int Y0 = _appSet.CAMERA_HEIGHT / 2;
 
-    // Внешний контур прицела
-    roundedRectangle(frame,
-                     cv::Point(X0 - _appSet.SIGHT_SIZE, Y0 - _appSet.SIGHT_SIZE),
-                     cv::Point(X0 + _appSet.SIGHT_SIZE, Y0 + _appSet.SIGHT_SIZE),
-                     CV_RGB(0, 255, 255),
+    if (_appSet.DRAW_SIGHT)
+    {
+        // Внешний контур прицела
+        roundedRectangle(frame,
+                         cv::Point(X0 - _appSet.SIGHT_SIZE, Y0 - _appSet.SIGHT_SIZE),
+                         cv::Point(X0 + _appSet.SIGHT_SIZE, Y0 + _appSet.SIGHT_SIZE),
+                         CV_RGB(0, 255, 255),
+                         2,
+                         cv::LINE_8,
+                         10);
+
+        // Рисочки внешнего контура
+        cv::line(frame,
+                 cv::Point(X0, Y0 - _appSet.SIGHT_SIZE),
+                 cv::Point(X0, Y0 - _appSet.SIGHT_SIZE + _appSet.SIGHT_TICK),
+                 CV_RGB(0, 255, 255),
+                 1,
+                 cv::LINE_8);
+        cv::line(frame,
+                 cv::Point(X0, Y0 + _appSet.SIGHT_SIZE),
+                 cv::Point(X0, Y0 + _appSet.SIGHT_SIZE - _appSet.SIGHT_TICK),
+                 CV_RGB(0, 255, 255),
+                 1,
+                 cv::LINE_8);
+        cv::line(frame,
+                 cv::Point(X0 - _appSet.SIGHT_SIZE, Y0 ),
+                 cv::Point(X0 - _appSet.SIGHT_SIZE + _appSet.SIGHT_TICK, Y0),
+                 CV_RGB(0, 255, 255),
+                 1,
+                 cv::LINE_8);
+        cv::line(frame,
+                 cv::Point(X0 + _appSet.SIGHT_SIZE, Y0 ),
+                 cv::Point(X0 + _appSet.SIGHT_SIZE - _appSet.SIGHT_TICK, Y0),
+                 CV_RGB(0, 255, 255),
+                 1,
+                 cv::LINE_8);
+
+        // Рисочки внутреннего прицела
+        cv::line(frame,
+                 cv::Point(X0 - _appSet.SIGHT_DELTA, Y0),
+                 cv::Point(X0 - _appSet.SIGHT_DELTA - _appSet.SIGHT_CROSS, Y0),
+                 CV_RGB(255, 255, 255),
+                 1,
+                 cv::LINE_8);
+        cv::line(frame,
+                 cv::Point(X0 + _appSet.SIGHT_DELTA, Y0),
+                 cv::Point(X0 + _appSet.SIGHT_DELTA + _appSet.SIGHT_CROSS, Y0),
+                 CV_RGB(255, 255, 255),
+                 1,
+                 cv::LINE_8);
+
+        cv::line(frame,
+                 cv::Point(X0, Y0 - _appSet.SIGHT_DELTA),
+                 cv::Point(X0, Y0 - _appSet.SIGHT_DELTA - _appSet.SIGHT_CROSS),
+                 CV_RGB(255, 255, 255),
+                 1,
+                 cv::LINE_8);
+        cv::line(frame,
+                 cv::Point(X0, Y0 + _appSet.SIGHT_DELTA),
+                 cv::Point(X0, Y0 + _appSet.SIGHT_DELTA + _appSet.SIGHT_CROSS),
+                 CV_RGB(255, 255, 255),
+                 1,
+                 cv::LINE_8);
+    }
+
+    if (_appSet.DRAW_GRID)
+    {
+        ///////////////////////////////////////////////////////////////////////
+        // Риски вертикальные (левые)
+        ///////////////////////////////////////////////////////////////////////
+        for (int i = 1; i < _appSet.GRID_V_MAX; i++)
+        {
+            cv::line(frame,
+                     cv::Point(_appSet.XV0, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
+                     cv::Point(_appSet.XV0 + _appSet.GRID_BIG_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
+                     CV_RGB(255, 255, 255),
                      2,
-                     cv::LINE_8,
-                     10);
+                     cv::LINE_8);
 
-    // Рисочки внешнего контура
-    cv::line(frame,
-             cv::Point(X0, Y0 - _appSet.SIGHT_SIZE),
-             cv::Point(X0, Y0 - _appSet.SIGHT_SIZE + _appSet.SIGHT_TICK),
-             CV_RGB(0, 255, 255),
-             1,
-             cv::LINE_8);
-    cv::line(frame,
-             cv::Point(X0, Y0 + _appSet.SIGHT_SIZE),
-             cv::Point(X0, Y0 + _appSet.SIGHT_SIZE - _appSet.SIGHT_TICK),
-             CV_RGB(0, 255, 255),
-             1,
-             cv::LINE_8);
-    cv::line(frame,
-             cv::Point(X0 - _appSet.SIGHT_SIZE, Y0 ),
-             cv::Point(X0 - _appSet.SIGHT_SIZE + _appSet.SIGHT_TICK, Y0),
-             CV_RGB(0, 255, 255),
-             1,
-             cv::LINE_8);
-    cv::line(frame,
-             cv::Point(X0 + _appSet.SIGHT_SIZE, Y0 ),
-             cv::Point(X0 + _appSet.SIGHT_SIZE - _appSet.SIGHT_TICK, Y0),
-             CV_RGB(0, 255, 255),
-             1,
-             cv::LINE_8);
-
-    // Рисочки внутреннего прицела
-    cv::line(frame,
-             cv::Point(X0 - _appSet.SIGHT_DELTA, Y0),
-             cv::Point(X0 - _appSet.SIGHT_DELTA - _appSet.SIGHT_CROSS, Y0),
-             CV_RGB(255, 255, 255),
-             1,
-             cv::LINE_8);
-    cv::line(frame,
-             cv::Point(X0 + _appSet.SIGHT_DELTA, Y0),
-             cv::Point(X0 + _appSet.SIGHT_DELTA + _appSet.SIGHT_CROSS, Y0),
-             CV_RGB(255, 255, 255),
-             1,
-             cv::LINE_8);
-
-    cv::line(frame,
-             cv::Point(X0, Y0 - _appSet.SIGHT_DELTA),
-             cv::Point(X0, Y0 - _appSet.SIGHT_DELTA - _appSet.SIGHT_CROSS),
-             CV_RGB(255, 255, 255),
-             1,
-             cv::LINE_8);
-    cv::line(frame,
-             cv::Point(X0, Y0 + _appSet.SIGHT_DELTA),
-             cv::Point(X0, Y0 + _appSet.SIGHT_DELTA + _appSet.SIGHT_CROSS),
-             CV_RGB(255, 255, 255),
-             1,
-             cv::LINE_8);
-
-    ///////////////////////////////////////////////////////////////////////
-    // Риски вертикальные (левые)
-    ///////////////////////////////////////////////////////////////////////
-    for (int i = 1; i < _appSet.GRID_V_MAX; i++)
-    {
+            for (int j = 1; j < 10; j++)
+            {
+                cv::line(frame,
+                         cv::Point(_appSet.XV0 + _appSet.GRID_SMALL_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
+                         cv::Point(_appSet.XV0 + 2 * _appSet.GRID_SMALL_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
+                         CV_RGB(255, 255, 255),
+                         1,
+                         cv::LINE_8);
+            }
+        }
+        // Завершающая
         cv::line(frame,
-                 cv::Point(_appSet.XV0, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
-                 cv::Point(_appSet.XV0 + _appSet.GRID_BIG_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
+                 cv::Point(_appSet.XV0, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
+                 cv::Point(_appSet.XV0 + _appSet.GRID_BIG_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
                  CV_RGB(255, 255, 255),
                  2,
                  cv::LINE_8);
 
-        for (int j = 1; j < 10; j++)
+
+        ///////////////////////////////////////////////////////////////////////
+        // Риски вертикальные (правые)
+        ///////////////////////////////////////////////////////////////////////
+        for (int i = 1; i < _appSet.GRID_V_MAX; i++)
         {
             cv::line(frame,
-                     cv::Point(_appSet.XV0 + _appSet.GRID_SMALL_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
-                     cv::Point(_appSet.XV0 + 2 * _appSet.GRID_SMALL_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
+                     cv::Point(X0 + (X0 - _appSet.XV0) - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
+                     cv::Point(X0 + (X0 - _appSet.XV0) + _appSet.GRID_BIG_SIZE - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
                      CV_RGB(255, 255, 255),
-                     1,
+                     2,
                      cv::LINE_8);
+
+            for (int j = 1; j < 10; j++)
+            {
+                cv::line(frame,
+                         cv::Point(X0 + (X0 - _appSet.XV0) - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
+                         cv::Point(X0 + (X0 - _appSet.XV0) + _appSet.GRID_SMALL_SIZE - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
+                         CV_RGB(255, 255, 255),
+                         1,
+                         cv::LINE_8);
+            }
         }
-    }
-    // Завершающая
-    cv::line(frame,
-             cv::Point(_appSet.XV0, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
-             cv::Point(_appSet.XV0 + _appSet.GRID_BIG_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
-             CV_RGB(255, 255, 255),
-             2,
-             cv::LINE_8);
-
-
-    ///////////////////////////////////////////////////////////////////////
-    // Риски вертикальные (правые)
-    ///////////////////////////////////////////////////////////////////////
-    for (int i = 1; i < _appSet.GRID_V_MAX; i++)
-    {
+        // Завершающая
         cv::line(frame,
-                 cv::Point(X0 + (X0 - _appSet.XV0) - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
-                 cv::Point(X0 + (X0 - _appSet.XV0) + _appSet.GRID_BIG_SIZE - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
+                 cv::Point(X0 + (X0 - _appSet.XV0) - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
+                 cv::Point(X0 + (X0 - _appSet.XV0) + _appSet.GRID_BIG_SIZE - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
                  CV_RGB(255, 255, 255),
                  2,
                  cv::LINE_8);
 
-        for (int j = 1; j < 10; j++)
+
+        ///////////////////////////////////////////////////////////////////////
+        // Риски горизонтальные (верх)
+        ///////////////////////////////////////////////////////////////////////
+        for (int i = 1; i < _appSet.GRID_H_MAX; i++)
         {
             cv::line(frame,
-                     cv::Point(X0 + (X0 - _appSet.XV0) - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
-                     cv::Point(X0 + (X0 - _appSet.XV0) + _appSet.GRID_SMALL_SIZE - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
+                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), _appSet.YH0),
+                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), _appSet.YH0 + _appSet.GRID_BIG_SIZE),
                      CV_RGB(255, 255, 255),
-                     1,
+                     2,
                      cv::LINE_8);
+
+            for (int j = 1; j < 10; j++)
+            {
+                cv::line(frame,
+                         cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA, _appSet.YH0 + _appSet.GRID_SMALL_SIZE),
+                         cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA , _appSet.YH0 + 2 * _appSet.GRID_SMALL_SIZE),
+                         CV_RGB(255, 255, 255),
+                         1,
+                         cv::LINE_8);
+            }
         }
-    }
-    // Завершающая
-    cv::line(frame,
-             cv::Point(X0 + (X0 - _appSet.XV0) - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
-             cv::Point(X0 + (X0 - _appSet.XV0) + _appSet.GRID_BIG_SIZE - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
-             CV_RGB(255, 255, 255),
-             2,
-             cv::LINE_8);
-
-
-    ///////////////////////////////////////////////////////////////////////
-    // Риски горизонтальные (верх)
-    ///////////////////////////////////////////////////////////////////////
-    for (int i = 1; i < _appSet.GRID_H_MAX; i++)
-    {
+        // Завершающая
         cv::line(frame,
-                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), _appSet.YH0),
-                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), _appSet.YH0 + _appSet.GRID_BIG_SIZE),
-                 CV_RGB(128, 128, 128),
-                 2,
-                 cv::LINE_8);
-
-        for (int j = 1; j < 10; j++)
-        {
-            cv::line(frame,
-                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA, _appSet.YH0 + _appSet.GRID_SMALL_SIZE),
-                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA , _appSet.YH0 + 2 * _appSet.GRID_SMALL_SIZE),
-                     CV_RGB(255, 255, 255),
-                     1,
-                     cv::LINE_8);
-        }
-    }
-    // Завершающая
-    cv::line(frame,
-             cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.YH0),
-             cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.YH0 + _appSet.GRID_BIG_SIZE),
-             CV_RGB(128, 128, 128),
-             2,
-             cv::LINE_8);
-
-    ///////////////////////////////////////////////////////////////////////
-    // Риски горизонтальные (низ)
-    ///////////////////////////////////////////////////////////////////////
-    for (int i = 1; i < _appSet.GRID_H_MAX; i++)
-    {
-        cv::line(frame,
-                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), Y0 + (Y0 - _appSet.YV0) + 30),
-                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), Y0 + (Y0 - _appSet.YV0) + _appSet.GRID_BIG_SIZE + 30),
+                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.YH0),
+                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.YH0 + _appSet.GRID_BIG_SIZE),
                  CV_RGB(255, 255, 255),
                  2,
                  cv::LINE_8);
 
-        for (int j = 1; j < 10; j++)
+        ///////////////////////////////////////////////////////////////////////
+        // Риски горизонтальные (низ)
+        ///////////////////////////////////////////////////////////////////////
+        for (int i = 1; i < _appSet.GRID_H_MAX; i++)
         {
             cv::line(frame,
-                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA, Y0 + (Y0 - _appSet.YV0) + 30),
-                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA , Y0 + (Y0 - _appSet.YV0) + _appSet.GRID_SMALL_SIZE + 30),
-                     CV_RGB(128, 128, 128),
-                     1,
+                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), Y0 + (Y0 - _appSet.YV0) + 30),
+                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), Y0 + (Y0 - _appSet.YV0) + _appSet.GRID_BIG_SIZE + 30),
+                     CV_RGB(255, 255, 255),
+                     2,
                      cv::LINE_8);
+
+            for (int j = 1; j < 10; j++)
+            {
+                cv::line(frame,
+                         cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA, Y0 + (Y0 - _appSet.YV0) + 30),
+                         cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA , Y0 + (Y0 - _appSet.YV0) + _appSet.GRID_SMALL_SIZE + 30),
+                         CV_RGB(255, 255, 255),
+                         1,
+                         cv::LINE_8);
+            }
         }
+        // Завершающая
+        cv::line(frame,
+                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), Y0 + (Y0 - _appSet.YV0) + 30),
+                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), Y0 + (Y0 - _appSet.YV0) + _appSet.GRID_BIG_SIZE + 30),
+                 CV_RGB(255, 255, 255),
+                 2,
+                 cv::LINE_8);
     }
-    // Завершающая
-    cv::line(frame,
-             cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), Y0 + (Y0 - _appSet.YV0) + 30),
-             cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), Y0 + (Y0 - _appSet.YV0) + _appSet.GRID_BIG_SIZE + 30),
-             CV_RGB(255, 255, 255),
-             2,
-             cv::LINE_8);
-
-
 
     // Склейка
     cv::addWeighted(overlayImage, _appSet.ALPHA, frame, 1 - _appSet.ALPHA, 0, transparencyiImage);
@@ -652,7 +683,7 @@ void MainWindow::terminalInfo(const QString &output)
 
 void MainWindow::terminalError(const QString &error)
 {
-    terminalMessage("$ ERROR: " + error, "#E04343"); // Красный для ошибок
+    terminalMessage("$ ERROR: " + error, "#990000"); // Красный для ошибок
 }
 
 void MainWindow::clearTerminal()
@@ -692,4 +723,27 @@ void MainWindow::roundedRectangle(
     cv::ellipse(src, p2 + cv::Point(-cornerRadius, cornerRadius), cv::Size(cornerRadius, cornerRadius), 270.0, 0, 90, lineColor, thickness, lineType);
     cv::ellipse(src, p3 + cv::Point(-cornerRadius, -cornerRadius), cv::Size(cornerRadius, cornerRadius), 0.0, 0, 90, lineColor, thickness, lineType);
     cv::ellipse(src, p4 + cv::Point(cornerRadius, -cornerRadius), cv::Size(cornerRadius, cornerRadius), 90.0, 0, 90, lineColor, thickness, lineType);
+}
+
+void MainWindow::onSettingsButtonClicked()
+{
+    // Если вызвать конструктор SettingsWindow(this),
+    // то копируются стили главного окна, поэтому вызываем с NULL
+    _settingsWindow = new SettingsWindow(NULL);
+
+    // Центрировать инструментальную панель
+    QRect screenGeometry = QGuiApplication::screens()[0]->geometry();
+    int x = (screenGeometry.width() - _settingsWindow->width()) / 2;
+    int y = (screenGeometry.height() - _settingsWindow->height()) / 2;
+
+    _settingsWindow->setWindowTitle("БЭК СТЗ :: Настройки :: " + _appSet.getAppVersion());
+
+    _settingsWindow->move(x, y);
+
+    if (_settingsWindow->exec() == QDialog::Accepted)
+    {
+        _appSet.load();
+    }
+
+    delete _settingsWindow;
 }

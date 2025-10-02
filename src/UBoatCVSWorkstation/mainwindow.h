@@ -11,6 +11,7 @@
 #include "applicationsettings.h"
 #include "applicationcommon.h"
 #include "uboatmodel.h"
+#include "settingswindow.h"
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
@@ -69,6 +70,11 @@ private:
     cv::VideoCapture *_capture;
     QImage _image;
 
+    double _fps;
+    int _totalFrames;
+
+    SettingsWindow *_settingsWindow;
+
 signals:
     void cameraStatusChanged(ConnectionStatus);
     void packetStatusChanged(ConnectionStatus);
@@ -79,5 +85,6 @@ private slots:
     void onCameraStatusChanged();
     void onPacketStatusChanged();
     void onResetButtonClicked();
+    void onSettingsButtonClicked();
 };
 #endif // MAINWINDOW_H

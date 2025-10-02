@@ -12,16 +12,19 @@ SOURCES += \
     applicationsettings.cpp \
     main.cpp \
     mainwindow.cpp \
+    settingswindow.cpp \
     uboatmodel.cpp
 
 HEADERS += \
     applicationcommon.h \
     applicationsettings.h \
     mainwindow.h \
+    settingswindow.h \
     uboatmodel.h
 
 FORMS += \
-    mainwindow.ui
+    mainwindow.ui \
+    settingswindow.ui
 
 INCLUDEPATH += c:\opencv-4.12.0-build\install\include
 LIBS += -lwsock32

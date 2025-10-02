@@ -18,5 +18,6 @@
         <file>img/button_location_map_pin_mouseover_icon.png</file>
         <file>img/button_paperplane_paper plane_icon.png</file>
         <file>img/button_paperplane_paper plane_mouseover_icon.png</file>
+        <file>img/sight.png</file>
     </qresource>
 </RCC>
