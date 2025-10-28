@@ -17,7 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowIcon(QIcon(":/img/sight.png"));
 
     setGeometry();          // Геометрия окон
-    setStyle(Theme::BLACK); // Установка темы приложения
+    setStyle(Theme::WHITE); // Установка темы приложения
     setButtonIcons();       // Установка иконок
 
     _videoTimer = new QTimer(this);
@@ -165,6 +165,41 @@ void MainWindow::setStyle(Theme theme) {
 
         ui->lbReset->setStyleSheet("color : dimgrey;");
         ui->lbReset->setFont(fontLabel);
+
+        ui->lbInfoPanelTitle->setStyleSheet("color : dimgrey;");
+        ui->lbInfoPanelTitle->setFont(fontLabelTitle);
+
+        ui->lbInfoPanelTargetTotal->setStyleSheet("color : dimgrey;");
+        ui->lbInfoPanelTargetTotal->setFont(fontLabelSmall);
+
+        ui->lbInfoPanelTargetTotalValue->setStyleSheet("color : '#3C66D9';");
+        ui->lbInfoPanelTargetTotalValue->setFont(fontLabelBig);
+
+        ui->lbInfoPanelTargetActive->setStyleSheet("color : dimgrey;");
+        ui->lbInfoPanelTargetActive->setFont(fontLabelSmall);
+
+        ui->lbInfoPanelTargetActiveValue->setStyleSheet("color : '#4CAF50';");
+        ui->lbInfoPanelTargetActiveValue->setFont(fontLabelBig);
+
+        ui->lbInfoPanelSpeed->setStyleSheet("color : dimgrey;");
+        ui->lbInfoPanelSpeed->setFont(fontLabelSmall);
+
+        ui->lbInfoPanelSpeedValue->setStyleSheet("color : silver;");
+        ui->lbInfoPanelSpeedValue->setFont(fontLabelBig);
+
+        // Стиль окна терминала
+        ui->plainTextEdit->setReadOnly(true);
+        ui->plainTextEdit->setFont(QFont("Consolas", 10)); // Моноширинный шрифт
+        //ui->plainTextEdit->setStyleSheet(
+        //    "QPlainTextEdit {"
+        //    "    background-color: #000000;"
+        //    "    color: #00FF00;"
+        //    "    border: 1px solid #333;"
+        //    "    font-family: 'Courier New', monospace;"
+        //    "    selection-background-color: #555;"
+        //    "}"
+        //    );
+
         break;
     }
 
@@ -213,24 +248,24 @@ void MainWindow::setStyle(Theme theme) {
         ui->lbInfoPanelSpeedValue->setStyleSheet("background-color : black; color : silver;");
         ui->lbInfoPanelSpeedValue->setFont(fontLabelBig);
 
+        // Стиль окна терминала
+        ui->plainTextEdit->setReadOnly(true);
+        ui->plainTextEdit->setFont(QFont("Consolas", 10)); // Моноширинный шрифт
+        ui->plainTextEdit->setStyleSheet(
+            "QPlainTextEdit {"
+            "    background-color: #000000;"
+            "    color: #00FF00;"
+            "    border: 1px solid #333;"
+            "    font-family: 'Courier New', monospace;"
+            "    selection-background-color: #555;"
+            "}"
+            );
+
         break;
 
     default:
         break;
     }
-
-    // Стиль окна терминала
-    ui->plainTextEdit->setReadOnly(true);
-    ui->plainTextEdit->setFont(QFont("Consolas", 10)); // Моноширинный шрифт
-    ui->plainTextEdit->setStyleSheet(
-        "QPlainTextEdit {"
-        "    background-color: #000000;"
-        "    color: #00FF00;"
-        "    border: 1px solid #333;"
-        "    font-family: 'Courier New', monospace;"
-        "    selection-background-color: #555;"
-        "}"
-        );
 }
 
 void MainWindow::moveWindowToCenter()
