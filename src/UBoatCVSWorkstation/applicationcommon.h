@@ -12,4 +12,12 @@ enum ConnectionStatus {
     UNKNOWN
 };
 
+struct BoundingBox
+{
+    float x, y, w, h;
+    float confidence;
+    int track_id;
+    bool selected;
+};
+
 #endif // APPLICATIONCOMMON_H

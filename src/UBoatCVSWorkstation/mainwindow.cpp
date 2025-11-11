@@ -25,6 +25,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     _capture = nullptr;
 
+    // SetupUDP
+    _udpSocket = nullptr;
+
+
     // Сигналы
     connect(ui->pbCamera, &QPushButton::clicked, this, &MainWindow::onCameraButtonClicked);
     connect(ui->pbPacket, &QPushButton::clicked, this, &MainWindow::onPacketButtonClicked);
@@ -321,11 +325,13 @@ void MainWindow::onPacketButtonClicked()
     {
     case ConnectionStatus::ON:
         setPacketSatatus(ConnectionStatus::OFF);
+        setUDPConnection(ConnectionStatus::OFF);
         ui->pbPacket->setIcon(QIcon(":/img/button_off_icon.png"));
         ui->pbPacket->setIconSize(QSize(64, 64));
         break;
     case ConnectionStatus::OFF:
         setPacketSatatus(ConnectionStatus::ON);
+        setUDPConnection(ConnectionStatus::ON);
         ui->pbPacket->setIcon(QIcon(":/img/button_on_icon.png"));
         ui->pbPacket->setIconSize(QSize(64, 64));
         break;
@@ -781,4 +787,131 @@ void MainWindow::onSettingsButtonClicked()
     }
 
     delete _settingsWindow;
+}
+void MainWindow::setUDPConnection(ConnectionStatus connectionStatus)
+{
+    switch (connectionStatus)
+    {
+
+    case ON:
+    {
+        try
+        {
+            _udpSocket = new QUdpSocket(this);
+        }
+        catch (...)
+        {
+            qDebug() << "ERROR: Создание UDP сокета";
+            terminalError("Создание UDP сокета");
+        }
+
+        if (_udpSocket)
+        {
+            qDebug() << "UDP сокет создан";
+            terminalWarning("UDP сокет создан");
+
+            try
+            {
+                if (!_udpSocket->bind(_appSet.PORT_DATA))
+                {
+                    terminalError("Не удалось выполнить привязку UDP сокета");
+                }
+                else
+                {
+                    qDebug() << "Привязка UDP сокета -- OK";
+                    terminalInfo("Привязка UDP сокета -- OK");
+
+                    connect(_udpSocket, &QUdpSocket::readyRead, this, &MainWindow::readPendingDatagrams);
+                }
+            } catch (...)
+            {
+                qDebug() << "ERROR: Привязка UDP сокета";
+                terminalError("Привязка UDP сокета");
+            }
+        }
+
+        break;
+    }
+    case OFF:
+    {
+        if (_udpSocket)
+        {
+            disconnect(_udpSocket, &QUdpSocket::readyRead, nullptr, nullptr);
+            _udpSocket->close();
+
+            qDebug() << "UDP сокет освобожден -- OK";
+            terminalInfo("UDP сокет освобожден -- OK");
+
+            delete _udpSocket;
+
+            qDebug() << "UDP сокет уничтожен";
+            terminalWarning("UDP сокет уничтожен");
+        }
+
+        break;
+    }
+
+    case UNKNOWN:
+        break;
+    }
+}
+
+void MainWindow::readPendingDatagrams()
+{
+    while (_udpSocket->hasPendingDatagrams())
+    {
+        QByteArray datagram;
+        datagram.resize(_udpSocket->pendingDatagramSize());
+        QHostAddress sender;
+        quint16 senderPort;
+
+        _udpSocket->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
+        processUDPData(datagram);
+    }
+}
+
+void MainWindow::processUDPData(const QByteArray &data)
+{
+    if (data.size() == _appSet.DATA_PACKET_SIZE)
+    {
+        // Передача пакета данных
+
+        float x, y, w, h, confidence;
+        int32_t index, track_id;
+        QDataStream stream(data);
+        stream.setByteOrder(QDataStream::LittleEndian);
+        stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+        stream >> x >> y >> w >> h >> confidence >> index >> track_id;
+
+        QMutexLocker locker(&_boxesMutex);
+        BoundingBox box;
+        box.x = x;
+        box.y = y;
+        box.w = w;
+        box.h = h;
+        box.confidence = confidence;
+        box.track_id = track_id;
+        box.selected = true;
+
+        QString box_info = QString::number(track_id) + ": (" + QString::number(x) + ";" + QString::number(y) + ") [" + QString::number(w) + ";" + QString::number(h) + "]";
+        terminalInfo(box_info);
+        qDebug() << box_info;
+
+        _boxesMap[track_id] = box; // Добавляем бокс в карту
+    }
+    else if (data.size() == 1)
+    {
+        // Окончание передачи
+        QMutexLocker locker(&_boxesMutex);
+        _boxesMap.clear();
+    }
+    else
+    {
+        QString packetContent;
+        for (char byte : data) {
+            packetContent += QString("0x%1 ").arg((unsigned char)byte, 2, 16, QChar('0'));
+        }
+        qDebug() << "Неверный размер UDP-данных:" << data.size() << "байт, содержимое:" << packetContent;
+        terminalError(QString("Неверный размер UDP-данных: ") +  QString::number(data.size()));
+    }
 }

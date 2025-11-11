@@ -48,6 +48,11 @@ public:
     const int XH0 = CAMERA_WIDTH / 2 - GRID_H_DELTA * 2 * 10;
     const int YH0 = CAMERA_HEIGHT / 10;
 
+    int PORT_VIDEO = 8010;
+    int PORT_DATA = 6000;
+
+    const int DATA_PACKET_SIZE = 28;
+
 private:
     QString _settingsFileName;
     const std::string APP_VERSION = "1.0.1";

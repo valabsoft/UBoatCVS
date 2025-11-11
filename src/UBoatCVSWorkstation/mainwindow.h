@@ -7,6 +7,8 @@
 #include <QDebug>
 #include <QTimer>
 #include <QImage>
+#include <QUdpSocket>
+#include <QMutex>
 
 #include "applicationsettings.h"
 #include "applicationcommon.h"
@@ -40,6 +42,7 @@ public:
 
     void setCameraSatatus(ConnectionStatus cameraStatus);
     void setPacketSatatus(ConnectionStatus packetStatus);
+    void setUDPConnection(ConnectionStatus connectionStatus);
 
     // Команды для работы с терминалом
     void terminalMessage(const QString &message, const QString &color = "#FFFFFF");
@@ -62,6 +65,8 @@ private:
     void onVideoTimer();
     QImage cvMatToQImage(const cv::Mat &mat);
 
+    QUdpSocket *_udpSocket;
+
 private:
     Ui::MainWindow *ui;
     ApplicationSettings _appSet; // Уставки приложения
@@ -75,6 +80,10 @@ private:
 
     SettingsWindow *_settingsWindow;
 
+    void processUDPData(const QByteArray &data);
+    QMap<int, BoundingBox> _boxesMap;
+    QMutex _boxesMutex;
+
 signals:
     void cameraStatusChanged(ConnectionStatus);
     void packetStatusChanged(ConnectionStatus);
@@ -86,5 +95,7 @@ private slots:
     void onPacketStatusChanged();
     void onResetButtonClicked();
     void onSettingsButtonClicked();
+
+    void readPendingDatagrams();
 };
 #endif // MAINWINDOW_H
