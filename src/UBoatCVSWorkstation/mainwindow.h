@@ -14,6 +14,7 @@
 #include "applicationcommon.h"
 #include "uboatmodel.h"
 #include "settingswindow.h"
+#include "videocapturethread.h"
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
@@ -62,12 +63,6 @@ public:
         const int cornerRadius);
 
 private:
-    void onVideoTimer();
-    QImage cvMatToQImage(const cv::Mat &mat);
-
-    QUdpSocket *_udpSocket;
-
-private:
     Ui::MainWindow *ui;
     ApplicationSettings _appSet; // Уставки приложения
     UBoatModel *_model;
@@ -84,6 +79,17 @@ private:
     QMap<int, BoundingBox> _boxesMap;
     QMutex _boxesMutex;
 
+    VideoCaptureThread *_videoCaptureThread;
+
+    void onVideoTimer();
+    QImage cvMatToQImage(const cv::Mat &mat);
+
+    QUdpSocket *_udpSocket;
+    bool tryOpenVideoCapture();
+
+    void updateTargetInfo(int targetcount);
+
+
 signals:
     void cameraStatusChanged(ConnectionStatus);
     void packetStatusChanged(ConnectionStatus);
@@ -97,5 +103,11 @@ private slots:
     void onSettingsButtonClicked();
 
     void readPendingDatagrams();
+
+    void updateImage(cv::Mat &frame);
+    void handleCaptureError(const QString &error);
+    void handleCaptureOpened();
+
+    void drawGraphicalObjects(cv::Mat &frame);
 };
 #endif // MAINWINDOW_H

@@ -13,14 +13,16 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     settingswindow.cpp \
-    uboatmodel.cpp
+    uboatmodel.cpp \
+    videocapturethread.cpp
 
 HEADERS += \
     applicationcommon.h \
     applicationsettings.h \
     mainwindow.h \
     settingswindow.h \
-    uboatmodel.h
+    uboatmodel.h \
+    videocapturethread.h
 
 FORMS += \
     mainwindow.ui \

@@ -384,7 +384,7 @@
            </size>
           </property>
           <property name="text">
-           <string>4</string>
+           <string>0</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -427,7 +427,7 @@
            </size>
           </property>
           <property name="text">
-           <string>2</string>
+           <string>0</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>

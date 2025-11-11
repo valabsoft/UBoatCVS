@@ -27,6 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // SetupUDP
     _udpSocket = nullptr;
+    _videoCaptureThread = nullptr;
 
 
     // Сигналы
@@ -346,86 +347,184 @@ void MainWindow::onResetButtonClicked()
     terminalError("Выполнен сброс");
 }
 
+bool MainWindow::tryOpenVideoCapture()
+{
+    try
+    {
+        if (_videoCaptureThread && _videoCaptureThread->isRunning())
+        {
+            return false;
+        }
+
+        int port = _appSet.PORT_VIDEO;
+        std::string pipeline = "udpsrc port=" + std::to_string(port) + " buffer-size=524288 ! "
+                                                                       "application/x-rtp,encoding-name=H264,payload=96 ! "
+                                                                       "rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! "
+                                                                       "video/x-raw,format=BGR ! appsink drop=1 max-buffers=1 sync=false drop=true";
+
+        _videoCaptureThread = new VideoCaptureThread(pipeline, this);
+        connect(_videoCaptureThread, &VideoCaptureThread::frameReady, this, &MainWindow::updateImage);
+        connect(_videoCaptureThread, &VideoCaptureThread::captureError, this, &MainWindow::handleCaptureError);
+        connect(_videoCaptureThread, &VideoCaptureThread::captureOpened, this, &MainWindow::handleCaptureOpened);
+        connect(_videoCaptureThread, &VideoCaptureThread::finished, _videoCaptureThread, &QObject::deleteLater);
+
+        _videoCaptureThread->start();
+        return true;
+    }
+    catch (...)
+    {
+        return false;
+    }
+    return false;
+}
+
+void MainWindow::handleCaptureError(const QString &error)
+{
+    terminalError(error);
+    qDebug() << error;
+
+    if (_videoCaptureThread)
+    {
+        _videoCaptureThread->stop();
+        _videoCaptureThread->deleteLater();
+        _videoCaptureThread = nullptr;
+
+        qDebug() << "Дескриптор видеопотока освобожден";
+        terminalError("Дескриптор видеопотока освобожден");
+    }
+}
+
+void MainWindow::handleCaptureOpened()
+{
+    terminalInfo("Получение видеопотока на порту " + QString::number(_appSet.PORT_VIDEO));
+    terminalWarning("Видеопоток успешно открыт");
+    qDebug() << "Получение видеопотока на порту " + QString::number(_appSet.PORT_VIDEO);
+    qDebug() << "Видеопоток успешно открыт";
+}
+
 void MainWindow::onCameraStatusChanged()
 {
-    switch (_model->getCameraStatus()) {
-    case ConnectionStatus::OFF:
-        qDebug() << "onCameraStatusChanged(): OFF";
-        terminalInfo("onCameraStatusChanged(): OFF");
+    if (_appSet.TEST_MODE)
+    {
+        switch (_model->getCameraStatus()) {
+        case ConnectionStatus::OFF:
+            qDebug() << "onCameraStatusChanged(): OFF";
+            terminalInfo("onCameraStatusChanged(): OFF");
 
-        // Остановка таймера
-        if (_videoTimer->isActive())
-        {
-            _videoTimer->stop();
-            qDebug() << "Видеотаймер остановлен";
-            terminalWarning("Видеотаймер остановлен");
-        }
-
-        // Освобождение камеры
-        if (_capture)
-        {
-            _capture->release();
-            _capture = nullptr;
-            qDebug() << "Дескриптор камеры освобожден";
-            terminalWarning("Дескриптор камеры освобожден");
-        }
-
-        break;
-    case ConnectionStatus::ON:
-        qDebug() << "onCameraStatusChanged(): ON";
-        terminalInfo("onCameraStatusChanged(): ON");
-
-        // Захват камеры
-        if (!_capture)
-        {
-            if (!_appSet.TEST_MODE)
+            // Остановка таймера
+            if (_videoTimer->isActive())
             {
-                _capture = new cv::VideoCapture(_appSet.CAMERA_ID, cv::CAP_DSHOW);
-                // Настраиваем параметры камеры
-                _capture->set(cv::CAP_PROP_FRAME_WIDTH, _appSet.CAMERA_WIDTH);
-                _capture->set(cv::CAP_PROP_FRAME_HEIGHT, _appSet.CAMERA_HEIGHT);
-                _capture->set(cv::CAP_PROP_FPS, _appSet.CAMERA_FPS);
-                _fps = _capture->get(cv::CAP_PROP_FPS);
-            }
-            else
-            {
-                _capture = new cv::VideoCapture("C:\\VID_20250501_082326_854_480.mp4", cv::CAP_FFMPEG);
-                _fps = _capture->get(cv::CAP_PROP_FPS);
-                _totalFrames = _capture->get(cv::CAP_PROP_FRAME_COUNT);
+                _videoTimer->stop();
+                qDebug() << "Видеотаймер остановлен";
+                terminalWarning("Видеотаймер остановлен");
             }
 
-
-            qDebug() << "Дескриптор камеры создан";
-            terminalWarning("Дескриптор камеры создан");
-
-            if (!_capture->isOpened())
+            // Освобождение камеры
+            if (_capture)
             {
-                QMessageBox::critical(this, "Ошибка", "Не удалось открыть камеру!");
-                delete _capture;
+                _capture->release();
                 _capture = nullptr;
-                return;
+                qDebug() << "Дескриптор камеры освобожден";
+                terminalWarning("Дескриптор камеры освобожден");
             }
-        }
 
-        // Запускаем таймер
-        if (!_videoTimer->isActive())
-        {
-            if (!_appSet.TEST_MODE)
+            break;
+        case ConnectionStatus::ON:
+            qDebug() << "onCameraStatusChanged(): ON";
+            terminalInfo("onCameraStatusChanged(): ON");
+
+            // Захват камеры
+            if (!_capture)
             {
-                // _videoTimer->start(_appSet.VIDEO_TIMER_INTERVAL);
-                _videoTimer->start((int)(1000 / _fps));
+                if (!_appSet.TEST_MODE)
+                {
+                    _capture = new cv::VideoCapture(_appSet.CAMERA_ID, cv::CAP_DSHOW);
+                    // Настраиваем параметры камеры
+                    _capture->set(cv::CAP_PROP_FRAME_WIDTH, _appSet.CAMERA_WIDTH);
+                    _capture->set(cv::CAP_PROP_FRAME_HEIGHT, _appSet.CAMERA_HEIGHT);
+                    _capture->set(cv::CAP_PROP_FPS, _appSet.CAMERA_FPS);
+                    _fps = _capture->get(cv::CAP_PROP_FPS);
+                }
+                else
+                {
+                    _capture = new cv::VideoCapture("C:\\VID_20250501_082326_854_480.mp4", cv::CAP_FFMPEG);
+                    _fps = _capture->get(cv::CAP_PROP_FPS);
+                    _totalFrames = _capture->get(cv::CAP_PROP_FRAME_COUNT);
+                }
+
+
+                qDebug() << "Дескриптор камеры создан";
+                terminalWarning("Дескриптор камеры создан");
+
+                if (!_capture->isOpened())
+                {
+                    QMessageBox::critical(this, "Ошибка", "Не удалось открыть камеру!");
+                    delete _capture;
+                    _capture = nullptr;
+                    return;
+                }
+            }
+
+            // Запускаем таймер
+            if (!_videoTimer->isActive())
+            {
+                if (!_appSet.TEST_MODE)
+                {
+                    // _videoTimer->start(_appSet.VIDEO_TIMER_INTERVAL);
+                    _videoTimer->start((int)(1000 / _fps));
+                }
+                else
+                {
+                    _videoTimer->start((int)(1000 / _fps));
+                }
+                qDebug() << "Видеотаймер запущен";
+                terminalWarning("Видеотаймер запущен");
+            }
+
+            break;
+        default:
+            break;
+        }
+    }
+    else
+    {
+        switch (_model->getCameraStatus())
+        {
+        case ConnectionStatus::ON:
+            if (!tryOpenVideoCapture())
+            {
+                qDebug() << "Дескриптор видеопотока НЕ создан";
+                terminalError("Дескриптор видеопотока НЕ создан");
             }
             else
             {
-                _videoTimer->start((int)(1000 / _fps));
+                if (_videoCaptureThread)
+                {
+                    qDebug() << "Дескриптор видеопотока создан";
+                    terminalWarning("Дескриптор видеопотока создан");
+                }
             }
-            qDebug() << "Видеотаймер запущен";
-            terminalWarning("Видеотаймер запущен");
-        }
+            break;
+        case ConnectionStatus::OFF:
+            if (_videoCaptureThread)
+            {
+                _videoCaptureThread->stop();
+                delete _videoCaptureThread;
 
-        break;
-    default:
-        break;
+                ////////////////////////////////////////////////////////////////
+                // Почему не так?
+                // _videoCaptureThread->stop();
+                // _videoCaptureThread->deleteLater();
+                // _videoCaptureThread = nullptr;
+                ////////////////////////////////////////////////////////////////
+
+                qDebug() << "Дескриптор видеопотока освобожден";
+                terminalWarning("Дескриптор видеопотока освобожден");
+            }
+            break;
+        default:
+            break;
+        }
     }
 }
 
@@ -445,30 +544,14 @@ void MainWindow::onPacketStatusChanged()
     }
 }
 
-void MainWindow::onVideoTimer()
+void MainWindow::drawGraphicalObjects(cv::Mat &frame)
 {
-    if (_appSet.TEST_MODE && _model->getPacketStatus() == ConnectionStatus::ON)
-        return;
-
-    if (!_capture || !_capture->isOpened())
-    {
-        return;
-    }
-
-    cv::Mat frame;
-    *_capture >> frame; // Читаем следующий фрейм
-
-    if (frame.empty())
-    {
-        return;
-    }
-
-    // Конвертация BGR в RGB для Qt
-    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
-
     #pragma region Draw Graphical Objects
     cv::Mat overlayImage;
     cv::Mat transparencyiImage;
+
+    // Конвертация BGR в RGB для Qt
+    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
 
     frame.copyTo(overlayImage);
 
@@ -665,21 +748,71 @@ void MainWindow::onVideoTimer()
                  cv::LINE_8);
     }
 
+    // Отрисовка BoundingBoxes
+    for (const auto &box :  std::as_const(_boxesMap))
+    {
+        cv::Scalar color = box.selected ? cv::Scalar(0, 0, 255) : cv::Scalar(0, 255, 0);
+        int thickness = box.selected ? 3 : 2;
+
+        cv::rectangle(frame,
+                      cv::Point(box.x, box.y),
+                      cv::Point(box.x + box.w, box.y + box.h),
+                      color, thickness);
+
+        //std::string text = "ID:" + std::to_string(box.track_id) +
+        //                   " Conf:" + std::to_string(box.confidence).substr(0, 4);
+
+        //cv::putText(frame, text,
+        //            cv::Point(box.x, box.y - 5),
+        //            cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1);
+    }
+
     // Склейка
     cv::addWeighted(overlayImage, _appSet.ALPHA, frame, 1 - _appSet.ALPHA, 0, transparencyiImage);
 
     _image = QImage((uchar*) transparencyiImage.data,
-                      transparencyiImage.cols,
-                      transparencyiImage.rows,
-                      transparencyiImage.step,
-                      QImage::Format_RGB888);
-
+                    transparencyiImage.cols,
+                    transparencyiImage.rows,
+                    transparencyiImage.step,
+                    QImage::Format_RGB888);
     #pragma endregion
 
     ui->labelCameraView->setPixmap(QPixmap::fromImage(_image));
-
     //QImage image = cvMatToQImage(frame);
     //ui->labelCameraView->setPixmap(QPixmap::fromImage(image));
+}
+
+void MainWindow::onVideoTimer()
+{
+    if (_appSet.TEST_MODE && _model->getPacketStatus() == ConnectionStatus::ON)
+        return;
+
+    if (!_capture || !_capture->isOpened())
+    {
+        return;
+    }
+
+    cv::Mat frame;
+    *_capture >> frame; // Читаем следующий фрейм
+
+    if (frame.empty())
+    {
+        return;
+    }
+
+
+    drawGraphicalObjects(frame);
+
+}
+
+void MainWindow::updateImage(cv::Mat &frame)
+{
+    if (frame.empty())
+    {
+        return;
+    }
+
+    drawGraphicalObjects(frame);
 
 }
 
@@ -788,6 +921,7 @@ void MainWindow::onSettingsButtonClicked()
 
     delete _settingsWindow;
 }
+
 void MainWindow::setUDPConnection(ConnectionStatus connectionStatus)
 {
     switch (connectionStatus)
@@ -903,6 +1037,7 @@ void MainWindow::processUDPData(const QByteArray &data)
     {
         // Окончание передачи
         QMutexLocker locker(&_boxesMutex);
+        emit updateTargetInfo((int)_boxesMap.count());
         _boxesMap.clear();
     }
     else
@@ -914,4 +1049,10 @@ void MainWindow::processUDPData(const QByteArray &data)
         qDebug() << "Неверный размер UDP-данных:" << data.size() << "байт, содержимое:" << packetContent;
         terminalError(QString("Неверный размер UDP-данных: ") +  QString::number(data.size()));
     }
+}
+
+void MainWindow::updateTargetInfo(int targetcount)
+{
+    ui->lbInfoPanelTargetTotalValue->setText(QString::number(targetcount));
+    ui->lbInfoPanelTargetActiveValue->setText(QString::number(targetcount));
 }
