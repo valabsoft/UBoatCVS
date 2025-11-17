@@ -6,48 +6,63 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
     _model = new UBoatModel();
     _appSet.load(); // Загрузка файла настроек
+
     // Заголовок окна
     setWindowTitle("БЭК СТЗ :: AРМ Оператора :: " + _appSet.getAppVersion());
+
     // Иконка главного окна
     setWindowIcon(QIcon(":/img/sight.png"));
+
     setGeometry();          // Геометрия окон
-    setStyle(Theme::WHITE); // Установка темы приложения
+    setStyle(Theme::BLACK); // Установка темы приложения
     setButtonIcons();       // Установка иконок
+
     _videoTimer = new QTimer(this);
     connect(_videoTimer, &QTimer::timeout, this, &MainWindow::onVideoTimer);
+
     _capture = nullptr;
+
     // SetupUDP
     _udpSocket = nullptr;
     _videoCaptureThread = nullptr;
+
+
     // Сигналы
     connect(ui->pbCamera, &QPushButton::clicked, this, &MainWindow::onCameraButtonClicked);
     connect(ui->pbPacket, &QPushButton::clicked, this, &MainWindow::onPacketButtonClicked);
     connect(ui->pbResetTargets, &QPushButton::clicked, this, &MainWindow::onResetButtonClicked);
     connect(ui->pbSettings, &QPushButton::clicked, this, &MainWindow::onSettingsButtonClicked);
+
     connect(this, &MainWindow::cameraStatusChanged, this, &MainWindow::onCameraStatusChanged);
-    connect(this, &MainWindow::packetStatusChanged, this, &MainWindow::onPacketStatusChanged);
-    // Создаём статичный overlay для прицела и сетки
-    createStaticOverlay();
+    connect(this, &MainWindow::packetStatusChanged, this, &MainWindow::onPacketStatusChanged);    
 }
+
 MainWindow::~MainWindow()
 {
     if (!_videoTimer->isActive())
         _videoTimer->stop();
+
     if (_videoTimer)
         delete _videoTimer;
+
     if (_capture)
         delete _capture;
+
     delete _model;
     delete ui;
 }
+
 void MainWindow::setButtonIcons()
 {
     ui->pbCamera->setIcon(QIcon(":/img/button_off_icon.png"));
     ui->pbCamera->setIconSize(QSize(64, 64));
+
     ui->pbPacket->setIcon(QIcon(":/img/button_off_icon.png"));
     ui->pbPacket->setIconSize(QSize(64, 64));
+
     ui->pbSettings->setStyleSheet(
         ":active { border-image: url(:/img/button_settings_icon.png); }"
         ":hover { border-image: url(:/img/button_settings_mouseover_icon.png); }");
@@ -70,6 +85,7 @@ void MainWindow::setButtonIcons()
         ":active { border-image: url(:/img/button_location_map_pin_icon.png); }"
         ":hover { border-image: url(:/img/button_location_map_pin_mouseover_icon.png); }");
 }
+
 void MainWindow::setGeometry()
 {
     // Расчет размеров главного окна
@@ -77,49 +93,62 @@ void MainWindow::setGeometry()
                       _appSet.CAMERA_WIDTH + _appSet.PANEL_TOOL_SIZE + _appSet.PANEL_INFO_SIZE;
     int mainWindowH = _appSet.BORDER_SIZE * 3 +
                       _appSet.CAMERA_HEIGHT + _appSet.PANEL_TOOL_SIZE;
+
     // Фиксируем размер окна и убираем иконку ресайза
     setFixedSize(QSize(mainWindowW, mainWindowH));
+
     // Позиционирование панелей
     ui->groupBoxVerticalInfo->setGeometry(
         _appSet.BORDER_SIZE,
         _appSet.BORDER_SIZE,
         _appSet.PANEL_INFO_SIZE,
         _appSet.CAMERA_HEIGHT + _appSet.BORDER_SIZE + _appSet.PANEL_TOOL_SIZE);
+
     ui->groupBoxHorizontal->setGeometry(
         _appSet.BORDER_SIZE * 2 + _appSet.PANEL_INFO_SIZE,
         _appSet.BORDER_SIZE * 2 + _appSet.CAMERA_HEIGHT,
         _appSet.CAMERA_WIDTH,
         _appSet.PANEL_TOOL_SIZE);
+
     ui->groupBoxVertical->setGeometry(
         _appSet.BORDER_SIZE * 3 + _appSet.CAMERA_WIDTH + _appSet.PANEL_INFO_SIZE,
         _appSet.BORDER_SIZE,
         _appSet.PANEL_TOOL_SIZE,
         _appSet.CAMERA_HEIGHT + _appSet.BORDER_SIZE + _appSet.PANEL_TOOL_SIZE);
+
     // Позиционируем лейбл для вывода изображения
     ui->labelCameraView->setGeometry(
         _appSet.BORDER_SIZE * 2 + _appSet.PANEL_INFO_SIZE,
         _appSet.BORDER_SIZE,
         _appSet.CAMERA_WIDTH,
         _appSet.CAMERA_HEIGHT);
+
     // Позиционирование Layouts
+
     ui->horizontalLayout->setContentsMargins(10, 10, 10, 10);
     ui->horizontalLayout->setSpacing(_appSet.BORDER_SIZE);
     ui->groupBoxHorizontal->setLayout(ui->horizontalLayout);
+
     ui->verticalLayout->setContentsMargins(10, 10, 10, 10);
     ui->verticalLayout->setSpacing(_appSet.BORDER_SIZE);
     ui->groupBoxVertical->setLayout(ui->verticalLayout);
+
     ui->verticalLayoutInfo->setContentsMargins(10, 10, 10, 10);
     ui->verticalLayoutInfo->setSpacing(_appSet.BORDER_SIZE);
     ui->groupBoxVerticalInfo->setLayout(ui->verticalLayoutInfo);
+
     moveWindowToCenter();
 }
+
 void MainWindow::setStyle(Theme theme) {
     QFont fontLabel("GOST type A", 18, QFont::Bold);
     QFont fontLabelTitle("GOST type A", 20, QFont::Bold);
     QFont fontLabelSmall("GOST type A", 18, QFont::Bold);
     QFont fontLabelBig("GOST type B", 54, QFont::Bold);
+
     switch(theme)
     {
+
     case Theme::WHITE:
     {
         ui->labelCameraView->setStyleSheet("QLabel {"
@@ -129,28 +158,40 @@ void MainWindow::setStyle(Theme theme) {
                                            "color : dimgrey;"
                                            "}");
         ui->labelCameraView->setFont(fontLabel);
+
         ui->lbCamera->setStyleSheet("color : dimgrey;");
         ui->lbCamera->setFont(fontLabel);
+
         ui->lbPacket->setStyleSheet("color : dimgrey;");
         ui->lbPacket->setFont(fontLabel);
+
         ui->lbSettings->setStyleSheet("color : dimgrey;");
         ui->lbSettings->setFont(fontLabel);
+
         ui->lbReset->setStyleSheet("color : dimgrey;");
         ui->lbReset->setFont(fontLabel);
+
         ui->lbInfoPanelTitle->setStyleSheet("color : dimgrey;");
         ui->lbInfoPanelTitle->setFont(fontLabelTitle);
+
         ui->lbInfoPanelTargetTotal->setStyleSheet("color : dimgrey;");
         ui->lbInfoPanelTargetTotal->setFont(fontLabelSmall);
+
         ui->lbInfoPanelTargetTotalValue->setStyleSheet("color : '#3C66D9';");
         ui->lbInfoPanelTargetTotalValue->setFont(fontLabelBig);
+
         ui->lbInfoPanelTargetActive->setStyleSheet("color : dimgrey;");
         ui->lbInfoPanelTargetActive->setFont(fontLabelSmall);
+
         ui->lbInfoPanelTargetActiveValue->setStyleSheet("color : '#4CAF50';");
         ui->lbInfoPanelTargetActiveValue->setFont(fontLabelBig);
+
         ui->lbInfoPanelSpeed->setStyleSheet("color : dimgrey;");
         ui->lbInfoPanelSpeed->setFont(fontLabelSmall);
+
         ui->lbInfoPanelSpeedValue->setStyleSheet("color : silver;");
         ui->lbInfoPanelSpeedValue->setFont(fontLabelBig);
+
         // Стиль окна терминала
         ui->plainTextEdit->setReadOnly(true);
         ui->plainTextEdit->setFont(QFont("Consolas", 10)); // Моноширинный шрифт
@@ -163,40 +204,55 @@ void MainWindow::setStyle(Theme theme) {
         //    "    selection-background-color: #555;"
         //    "}"
         //    );
+
         break;
     }
+
     case Theme::BLACK:
         // Цвет фона главного окна приложения
         this->setStyleSheet("background-color: black;");
+
         ui->labelCameraView->setStyleSheet("QLabel {"
                                            "border-style: solid;"
                                            "border-width: 1px;"
                                            "border-color: silver;"
                                            "color : silver;"
-                                           "}");
+                                           "}");        
         ui->labelCameraView->setFont(fontLabel);
+
         ui->lbCamera->setStyleSheet("background-color : black; color : silver;");
         ui->lbCamera->setFont(fontLabel);
+
         ui->lbPacket->setStyleSheet("background-color : black; color : silver;");
         ui->lbPacket->setFont(fontLabel);
+
         ui->lbSettings->setStyleSheet("background-color : black; color : silver;");
         ui->lbSettings->setFont(fontLabel);
+
         ui->lbReset->setStyleSheet("background-color : black; color : silver;");
         ui->lbReset->setFont(fontLabel);
+
         ui->lbInfoPanelTitle->setStyleSheet("background-color : black; color : silver;");
         ui->lbInfoPanelTitle->setFont(fontLabelTitle);
+
         ui->lbInfoPanelTargetTotal->setStyleSheet("background-color : black; color : dimgrey;");
         ui->lbInfoPanelTargetTotal->setFont(fontLabelSmall);
+
         ui->lbInfoPanelTargetTotalValue->setStyleSheet("background-color : black; color : '#3C66D9';");
         ui->lbInfoPanelTargetTotalValue->setFont(fontLabelBig);
+
         ui->lbInfoPanelTargetActive->setStyleSheet("background-color : black; color : dimgrey;");
         ui->lbInfoPanelTargetActive->setFont(fontLabelSmall);
+
         ui->lbInfoPanelTargetActiveValue->setStyleSheet("background-color : black; color : '#4CAF50';");
         ui->lbInfoPanelTargetActiveValue->setFont(fontLabelBig);
+
         ui->lbInfoPanelSpeed->setStyleSheet("background-color : black; color : dimgrey;");
         ui->lbInfoPanelSpeed->setFont(fontLabelSmall);
+
         ui->lbInfoPanelSpeedValue->setStyleSheet("background-color : black; color : silver;");
         ui->lbInfoPanelSpeedValue->setFont(fontLabelBig);
+
         // Стиль окна терминала
         ui->plainTextEdit->setReadOnly(true);
         ui->plainTextEdit->setFont(QFont("Consolas", 10)); // Моноширинный шрифт
@@ -209,11 +265,14 @@ void MainWindow::setStyle(Theme theme) {
             "    selection-background-color: #555;"
             "}"
             );
+
         break;
+
     default:
         break;
     }
 }
+
 void MainWindow::moveWindowToCenter()
 {
     auto primaryScreen = QGuiApplication::primaryScreen(); // Главный экран
@@ -223,20 +282,25 @@ void MainWindow::moveWindowToCenter()
     primaryScreenRectCenter.setY(primaryScreenRectCenter.y() - (this->height()/2));
     move(primaryScreenRectCenter);
 }
+
 void MainWindow::setCameraSatatus(ConnectionStatus cameraStatus)
 {
     if (_model->getCameraStatus() == cameraStatus)
         return;
+
     _model->setCameraStatus(cameraStatus);
     emit cameraStatusChanged(cameraStatus);
 }
+
 void MainWindow::setPacketSatatus(ConnectionStatus packetStatus)
 {
     if (_model->getPacketStatus() == packetStatus)
         return;
+
     _model->setPacketStatus(packetStatus);
     emit packetStatusChanged(packetStatus);
 }
+
 void MainWindow::onCameraButtonClicked()
 {
     switch (_model->getCameraStatus())
@@ -255,6 +319,7 @@ void MainWindow::onCameraButtonClicked()
         break;
     }
 }
+
 void MainWindow::onPacketButtonClicked()
 {
     switch (_model->getPacketStatus())
@@ -275,11 +340,13 @@ void MainWindow::onPacketButtonClicked()
         break;
     }
 }
+
 void MainWindow::onResetButtonClicked()
 {
     clearTerminal();
     terminalError("Выполнен сброс");
 }
+
 bool MainWindow::tryOpenVideoCapture()
 {
     try
@@ -288,16 +355,19 @@ bool MainWindow::tryOpenVideoCapture()
         {
             return false;
         }
+
         int port = _appSet.PORT_VIDEO;
         std::string pipeline = "udpsrc port=" + std::to_string(port) + " buffer-size=524288 ! "
                                                                        "application/x-rtp,encoding-name=H264,payload=96 ! "
                                                                        "rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! "
                                                                        "video/x-raw,format=BGR ! appsink drop=1 max-buffers=1 sync=false drop=true";
+
         _videoCaptureThread = new VideoCaptureThread(pipeline, this);
         connect(_videoCaptureThread, &VideoCaptureThread::frameReady, this, &MainWindow::updateImage);
         connect(_videoCaptureThread, &VideoCaptureThread::captureError, this, &MainWindow::handleCaptureError);
         connect(_videoCaptureThread, &VideoCaptureThread::captureOpened, this, &MainWindow::handleCaptureOpened);
         connect(_videoCaptureThread, &VideoCaptureThread::finished, _videoCaptureThread, &QObject::deleteLater);
+
         _videoCaptureThread->start();
         return true;
     }
@@ -307,19 +377,23 @@ bool MainWindow::tryOpenVideoCapture()
     }
     return false;
 }
+
 void MainWindow::handleCaptureError(const QString &error)
 {
     terminalError(error);
     qDebug() << error;
+
     if (_videoCaptureThread)
     {
         _videoCaptureThread->stop();
         _videoCaptureThread->deleteLater();
         _videoCaptureThread = nullptr;
+
         qDebug() << "Дескриптор видеопотока освобожден";
         terminalError("Дескриптор видеопотока освобожден");
     }
 }
+
 void MainWindow::handleCaptureOpened()
 {
     terminalInfo("Получение видеопотока на порту " + QString::number(_appSet.PORT_VIDEO));
@@ -327,6 +401,7 @@ void MainWindow::handleCaptureOpened()
     qDebug() << "Получение видеопотока на порту " + QString::number(_appSet.PORT_VIDEO);
     qDebug() << "Видеопоток успешно открыт";
 }
+
 void MainWindow::onCameraStatusChanged()
 {
     if (_appSet.TEST_MODE)
@@ -335,6 +410,7 @@ void MainWindow::onCameraStatusChanged()
         case ConnectionStatus::OFF:
             qDebug() << "onCameraStatusChanged(): OFF";
             terminalInfo("onCameraStatusChanged(): OFF");
+
             // Остановка таймера
             if (_videoTimer->isActive())
             {
@@ -342,6 +418,7 @@ void MainWindow::onCameraStatusChanged()
                 qDebug() << "Видеотаймер остановлен";
                 terminalWarning("Видеотаймер остановлен");
             }
+
             // Освобождение камеры
             if (_capture)
             {
@@ -350,10 +427,12 @@ void MainWindow::onCameraStatusChanged()
                 qDebug() << "Дескриптор камеры освобожден";
                 terminalWarning("Дескриптор камеры освобожден");
             }
+
             break;
         case ConnectionStatus::ON:
             qDebug() << "onCameraStatusChanged(): ON";
             terminalInfo("onCameraStatusChanged(): ON");
+
             // Захват камеры
             if (!_capture)
             {
@@ -372,8 +451,11 @@ void MainWindow::onCameraStatusChanged()
                     _fps = _capture->get(cv::CAP_PROP_FPS);
                     _totalFrames = _capture->get(cv::CAP_PROP_FRAME_COUNT);
                 }
+
+
                 qDebug() << "Дескриптор камеры создан";
                 terminalWarning("Дескриптор камеры создан");
+
                 if (!_capture->isOpened())
                 {
                     QMessageBox::critical(this, "Ошибка", "Не удалось открыть камеру!");
@@ -382,6 +464,7 @@ void MainWindow::onCameraStatusChanged()
                     return;
                 }
             }
+
             // Запускаем таймер
             if (!_videoTimer->isActive())
             {
@@ -397,6 +480,7 @@ void MainWindow::onCameraStatusChanged()
                 qDebug() << "Видеотаймер запущен";
                 terminalWarning("Видеотаймер запущен");
             }
+
             break;
         default:
             break;
@@ -426,12 +510,14 @@ void MainWindow::onCameraStatusChanged()
             {
                 _videoCaptureThread->stop();
                 delete _videoCaptureThread;
+
                 ////////////////////////////////////////////////////////////////
                 // Почему не так?
                 // _videoCaptureThread->stop();
                 // _videoCaptureThread->deleteLater();
                 // _videoCaptureThread = nullptr;
                 ////////////////////////////////////////////////////////////////
+
                 qDebug() << "Дескриптор видеопотока освобожден";
                 terminalWarning("Дескриптор видеопотока освобожден");
             }
@@ -441,6 +527,7 @@ void MainWindow::onCameraStatusChanged()
         }
     }
 }
+
 void MainWindow::onPacketStatusChanged()
 {
     switch (_model->getPacketStatus()) {
@@ -456,8 +543,17 @@ void MainWindow::onPacketStatusChanged()
         break;
     }
 }
-void MainWindow::createStaticOverlay() {
-    _staticOverlay = cv::Mat(_appSet.CAMERA_HEIGHT, _appSet.CAMERA_WIDTH, CV_8UC3, cv::Scalar(0, 0, 0));  // Прозрачный чёрный
+
+void MainWindow::drawGraphicalObjects(cv::Mat &frame)
+{
+    #pragma region Draw Graphical Objects
+    cv::Mat overlayImage;
+    cv::Mat transparencyiImage;
+
+    // Конвертация BGR в RGB для Qt
+    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+
+    frame.copyTo(overlayImage);
 
     int X0 = _appSet.CAMERA_WIDTH / 2;
     int Y0 = _appSet.CAMERA_HEIGHT / 2;
@@ -465,7 +561,7 @@ void MainWindow::createStaticOverlay() {
     if (_appSet.DRAW_SIGHT)
     {
         // Внешний контур прицела
-        roundedRectangle(_staticOverlay,
+        roundedRectangle(frame,
                          cv::Point(X0 - _appSet.SIGHT_SIZE, Y0 - _appSet.SIGHT_SIZE),
                          cv::Point(X0 + _appSet.SIGHT_SIZE, Y0 + _appSet.SIGHT_SIZE),
                          CV_RGB(0, 255, 255),
@@ -474,25 +570,25 @@ void MainWindow::createStaticOverlay() {
                          10);
 
         // Рисочки внешнего контура
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0, Y0 - _appSet.SIGHT_SIZE),
                  cv::Point(X0, Y0 - _appSet.SIGHT_SIZE + _appSet.SIGHT_TICK),
                  CV_RGB(0, 255, 255),
                  1,
                  cv::LINE_8);
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0, Y0 + _appSet.SIGHT_SIZE),
                  cv::Point(X0, Y0 + _appSet.SIGHT_SIZE - _appSet.SIGHT_TICK),
                  CV_RGB(0, 255, 255),
                  1,
                  cv::LINE_8);
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0 - _appSet.SIGHT_SIZE, Y0 ),
                  cv::Point(X0 - _appSet.SIGHT_SIZE + _appSet.SIGHT_TICK, Y0),
                  CV_RGB(0, 255, 255),
                  1,
                  cv::LINE_8);
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0 + _appSet.SIGHT_SIZE, Y0 ),
                  cv::Point(X0 + _appSet.SIGHT_SIZE - _appSet.SIGHT_TICK, Y0),
                  CV_RGB(0, 255, 255),
@@ -500,26 +596,26 @@ void MainWindow::createStaticOverlay() {
                  cv::LINE_8);
 
         // Рисочки внутреннего прицела
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0 - _appSet.SIGHT_DELTA, Y0),
                  cv::Point(X0 - _appSet.SIGHT_DELTA - _appSet.SIGHT_CROSS, Y0),
                  CV_RGB(255, 255, 255),
                  1,
                  cv::LINE_8);
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0 + _appSet.SIGHT_DELTA, Y0),
                  cv::Point(X0 + _appSet.SIGHT_DELTA + _appSet.SIGHT_CROSS, Y0),
                  CV_RGB(255, 255, 255),
                  1,
                  cv::LINE_8);
 
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0, Y0 - _appSet.SIGHT_DELTA),
                  cv::Point(X0, Y0 - _appSet.SIGHT_DELTA - _appSet.SIGHT_CROSS),
                  CV_RGB(255, 255, 255),
                  1,
                  cv::LINE_8);
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0, Y0 + _appSet.SIGHT_DELTA),
                  cv::Point(X0, Y0 + _appSet.SIGHT_DELTA + _appSet.SIGHT_CROSS),
                  CV_RGB(255, 255, 255),
@@ -544,7 +640,7 @@ void MainWindow::createStaticOverlay() {
         for (int i = 1; i < _appSet.GRID_H_MAX; i++)
         {
             // Основная риска
-            cv::line(_staticOverlay,
+            cv::line(frame,
                      cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), _appSet.YH0),
                      cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), _appSet.YH0 + _appSet.GRID_BIG_SIZE),
                      CV_RGB(255, 255, 255),
@@ -554,7 +650,7 @@ void MainWindow::createStaticOverlay() {
             // Дополнительные риски
             for (int j = 1; j < 10; j++)
             {
-                cv::line(_staticOverlay,
+                cv::line(frame,
                          cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA, _appSet.YH0 + _appSet.GRID_SMALL_SIZE),
                          cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA , _appSet.YH0 + 2 * _appSet.GRID_SMALL_SIZE),
                          CV_RGB(255, 255, 255),
@@ -563,7 +659,7 @@ void MainWindow::createStaticOverlay() {
             }
         }
         // Завершающая
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.YH0),
                  cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.YH0 + _appSet.GRID_BIG_SIZE),
                  CV_RGB(255, 255, 255),
@@ -575,7 +671,7 @@ void MainWindow::createStaticOverlay() {
         ///////////////////////////////////////////////////////////////////////
         for (int i = 1; i < _appSet.GRID_H_MAX; i++)
         {
-            cv::line(_staticOverlay,
+            cv::line(frame,
                      cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1),
                                _appSet.CAMERA_HEIGHT - _appSet.CAMERA_HEIGHT / 10 - _appSet.GRID_BIG_SIZE),
                      cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1),
@@ -586,7 +682,7 @@ void MainWindow::createStaticOverlay() {
 
             for (int j = 1; j < 10; j++)
             {
-                cv::line(_staticOverlay,
+                cv::line(frame,
                          cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA,
                                    _appSet.CAMERA_HEIGHT - _appSet.CAMERA_HEIGHT / 10 - _appSet.GRID_BIG_SIZE),
                          cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA,
@@ -597,7 +693,7 @@ void MainWindow::createStaticOverlay() {
             }
         }
         // Завершающая
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.CAMERA_HEIGHT - _appSet.CAMERA_HEIGHT / 10 - _appSet.GRID_BIG_SIZE),
                  cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.CAMERA_HEIGHT - _appSet.CAMERA_HEIGHT / 10),
                  CV_RGB(255, 255, 255),
@@ -609,7 +705,7 @@ void MainWindow::createStaticOverlay() {
         ///////////////////////////////////////////////////////////////////////
         for (int i = 1; i < _appSet.GRID_V_MAX; i++)
         {
-            cv::line(_staticOverlay,
+            cv::line(frame,
                      cv::Point(_appSet.XV0, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
                      cv::Point(_appSet.XV0 + _appSet.GRID_BIG_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
                      CV_RGB(255, 255, 255),
@@ -618,7 +714,7 @@ void MainWindow::createStaticOverlay() {
 
             for (int j = 1; j < 10; j++)
             {
-                cv::line(_staticOverlay,
+                cv::line(frame,
                          cv::Point(_appSet.XV0 + _appSet.GRID_SMALL_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
                          cv::Point(_appSet.XV0 + 2 * _appSet.GRID_SMALL_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
                          CV_RGB(255, 255, 255),
@@ -627,7 +723,7 @@ void MainWindow::createStaticOverlay() {
             }
         }
         // Завершающая
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(_appSet.XV0, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
                  cv::Point(_appSet.XV0 + _appSet.GRID_BIG_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
                  CV_RGB(255, 255, 255),
@@ -640,7 +736,7 @@ void MainWindow::createStaticOverlay() {
         ///////////////////////////////////////////////////////////////////////
         for (int i = 1; i < _appSet.GRID_V_MAX; i++)
         {
-            cv::line(_staticOverlay,
+            cv::line(frame,
                      cv::Point(X0 + (X0 - _appSet.XV0) - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
                      cv::Point(X0 + (X0 - _appSet.XV0) + _appSet.GRID_BIG_SIZE - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
                      CV_RGB(255, 255, 255),
@@ -649,7 +745,7 @@ void MainWindow::createStaticOverlay() {
 
             for (int j = 1; j < 10; j++)
             {
-                cv::line(_staticOverlay,
+                cv::line(frame,
                          cv::Point(X0 + (X0 - _appSet.XV0) - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
                          cv::Point(X0 + (X0 - _appSet.XV0) + _appSet.GRID_SMALL_SIZE - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
                          CV_RGB(255, 255, 255),
@@ -658,7 +754,7 @@ void MainWindow::createStaticOverlay() {
             }
         }
         // Завершающая
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0 + (X0 - _appSet.XV0) - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
                  cv::Point(X0 + (X0 - _appSet.XV0) + _appSet.GRID_BIG_SIZE - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
                  CV_RGB(255, 255, 255),
@@ -666,71 +762,74 @@ void MainWindow::createStaticOverlay() {
                  cv::LINE_8);
     }
 
-
-}
-void MainWindow::drawGraphicalObjects(cv::Mat &frame)
-{
-    // Конвертация BGR в RGB для Qt
-    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
-
-    // Накладываем статичный overlay (если нужна прозрачность — используем addWeighted только здесь)
-    if (!_staticOverlay.empty()) {
-        // Без прозрачности: просто добавляем (быстрее)
-        cv::add(frame, _staticOverlay, frame);  // Если _staticOverlay имеет непрозрачные пиксели
-        // С прозрачностью (если ALPHA > 0, но это медленнее — закомментируйте если не нужно):
-        // cv::addWeighted(frame, 1 - _appSet.ALPHA, _staticOverlay, _appSet.ALPHA, 0, frame);
-    }
-
-    // Отрисовка BoundingBoxes (без addWeighted, напрямую)
-    QMutexLocker locker(&_boxesMutex);  // Короткий лок, только для копии
-    QMap<int, BoundingBox> localBoxes = _lastBoxesMap;  // Локальная копия для безопасного рисования
-    locker.unlock();  // Разблокируем сразу
-    for (const auto &box : std::as_const(localBoxes))
+    // Отрисовка BoundingBoxes
+    for (const auto &box :  std::as_const(_boxesMap))
     {
         cv::Scalar color = box.selected ? cv::Scalar(0, 0, 255) : cv::Scalar(0, 255, 0);
         int thickness = box.selected ? 3 : 2;
+
         cv::rectangle(frame,
                       cv::Point(box.x, box.y),
                       cv::Point(box.x + box.w, box.y + box.h),
                       color, thickness);
-        /*
-        std::string text = "ID:" + std::to_string(box.track_id) + " Conf:" + std::to_string(box.confidence).substr(0, 4);
-        cv::putText(frame, text,
-                    cv::Point(box.x, box.y - 5),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1);
-        */
+
+        //std::string text = "ID:" + std::to_string(box.track_id) +
+        //                   " Conf:" + std::to_string(box.confidence).substr(0, 4);
+
+        //cv::putText(frame, text,
+        //            cv::Point(box.x, box.y - 5),
+        //            cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1);
     }
 
-    // Создаём QImage напрямую из frame (без transparencyiImage)
-    _image = QImage(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888).copy();  // .copy() для безопасности
+    // Склейка
+    cv::addWeighted(overlayImage, _appSet.ALPHA, frame, 1 - _appSet.ALPHA, 0, transparencyiImage);
+
+    _image = QImage((uchar*) transparencyiImage.data,
+                    transparencyiImage.cols,
+                    transparencyiImage.rows,
+                    transparencyiImage.step,
+                    QImage::Format_RGB888);
+    #pragma endregion
+
     ui->labelCameraView->setPixmap(QPixmap::fromImage(_image));
+    //QImage image = cvMatToQImage(frame);
+    //ui->labelCameraView->setPixmap(QPixmap::fromImage(image));
 }
+
 void MainWindow::onVideoTimer()
 {
     if (_appSet.TEST_MODE && _model->getPacketStatus() == ConnectionStatus::ON)
         return;
+
     if (!_capture || !_capture->isOpened())
     {
         return;
     }
+
     cv::Mat frame;
     *_capture >> frame; // Читаем следующий фрейм
+
     if (frame.empty())
     {
         return;
     }
+
+
     drawGraphicalObjects(frame);
+
 }
-void MainWindow::updateImage(const cv::Mat &frame)
+
+void MainWindow::updateImage(cv::Mat &frame)
 {
     if (frame.empty())
     {
-        //qDebug() << "Пустой кадр получен!";
         return;
     }
-    cv::Mat workingFrame = frame.clone();
-    drawGraphicalObjects(workingFrame);
+
+    drawGraphicalObjects(frame);
+
 }
+
 QImage MainWindow::cvMatToQImage(const cv::Mat &mat)
 {
     if (mat.type() == CV_8UC3) {
@@ -741,8 +840,10 @@ QImage MainWindow::cvMatToQImage(const cv::Mat &mat)
         return QImage(mat.data, mat.cols, mat.rows,
                       static_cast<int>(mat.step), QImage::Format_Grayscale8);
     }
+
     return QImage();
 }
+
 // Команды для работы с терминалом
 void MainWindow::terminalMessage(const QString &message, const QString &color)
 {
@@ -757,23 +858,29 @@ void MainWindow::terminalMessage(const QString &message, const QString &color)
     cursor.movePosition(QTextCursor::End);
     ui->plainTextEdit->setTextCursor(cursor);
 }
+
 void MainWindow::terminalWarning(const QString &command)
 {
     terminalMessage("$ " + command, "#4CAF50"); // Зеленый для команд
 }
+
 void MainWindow::terminalInfo(const QString &output)
 {
     terminalMessage("$ " + output, "#696969"); // Белый для вывода
 }
+
 void MainWindow::terminalError(const QString &error)
 {
     terminalMessage("$ ERROR: " + error, "#990000"); // Красный для ошибок
 }
+
 void MainWindow::clearTerminal()
 {
     ui->plainTextEdit->clear();
 }
+
 // Отрисовка графических элементов
+
 void MainWindow::roundedRectangle(
     cv::Mat& src,
     cv::Point topLeft,
@@ -787,42 +894,53 @@ void MainWindow::roundedRectangle(
     // p1 - p2
     // |     |
     // p4 - p3
+
     cv::Point p1 = topLeft;
     cv::Point p2 = cv::Point(bottomRight.x, topLeft.y);
     cv::Point p3 = bottomRight;
     cv::Point p4 = cv::Point(topLeft.x, bottomRight.y);
+
     // Draw Straight Lines
     cv::line(src, cv::Point(p1.x + cornerRadius, p1.y), cv::Point(p2.x - cornerRadius, p2.y), lineColor, thickness, lineType);
     cv::line(src, cv::Point(p2.x, p2.y + cornerRadius), cv::Point(p3.x, p3.y - cornerRadius), lineColor, thickness, lineType);
     cv::line(src, cv::Point(p4.x + cornerRadius, p4.y), cv::Point(p3.x-cornerRadius, p3.y), lineColor, thickness, lineType);
     cv::line(src, cv::Point(p1.x, p1.y + cornerRadius), cv::Point(p4.x, p4.y - cornerRadius), lineColor, thickness, lineType);
+
     // Draw Arcs
     cv::ellipse(src, p1 + cv::Point(cornerRadius, cornerRadius), cv::Size(cornerRadius, cornerRadius), 180.0, 0, 90, lineColor, thickness, lineType);
     cv::ellipse(src, p2 + cv::Point(-cornerRadius, cornerRadius), cv::Size(cornerRadius, cornerRadius), 270.0, 0, 90, lineColor, thickness, lineType);
     cv::ellipse(src, p3 + cv::Point(-cornerRadius, -cornerRadius), cv::Size(cornerRadius, cornerRadius), 0.0, 0, 90, lineColor, thickness, lineType);
     cv::ellipse(src, p4 + cv::Point(cornerRadius, -cornerRadius), cv::Size(cornerRadius, cornerRadius), 90.0, 0, 90, lineColor, thickness, lineType);
 }
+
 void MainWindow::onSettingsButtonClicked()
 {
     // Если вызвать конструктор SettingsWindow(this),
     // то копируются стили главного окна, поэтому вызываем с NULL
     _settingsWindow = new SettingsWindow(NULL);
+
     // Центрировать инструментальную панель
     QRect screenGeometry = QGuiApplication::screens()[0]->geometry();
     int x = (screenGeometry.width() - _settingsWindow->width()) / 2;
     int y = (screenGeometry.height() - _settingsWindow->height()) / 2;
+
     _settingsWindow->setWindowTitle("БЭК СТЗ :: Настройки :: " + _appSet.getAppVersion());
+
     _settingsWindow->move(x, y);
+
     if (_settingsWindow->exec() == QDialog::Accepted)
     {
         _appSet.load();
     }
+
     delete _settingsWindow;
 }
+
 void MainWindow::setUDPConnection(ConnectionStatus connectionStatus)
 {
     switch (connectionStatus)
     {
+
     case ON:
     {
         try
@@ -834,10 +952,12 @@ void MainWindow::setUDPConnection(ConnectionStatus connectionStatus)
             qDebug() << "ERROR: Создание UDP сокета";
             terminalError("Создание UDP сокета");
         }
+
         if (_udpSocket)
         {
             qDebug() << "UDP сокет создан";
             terminalWarning("UDP сокет создан");
+
             try
             {
                 if (!_udpSocket->bind(_appSet.PORT_DATA))
@@ -848,6 +968,7 @@ void MainWindow::setUDPConnection(ConnectionStatus connectionStatus)
                 {
                     qDebug() << "Привязка UDP сокета -- OK";
                     terminalInfo("Привязка UDP сокета -- OK");
+
                     connect(_udpSocket, &QUdpSocket::readyRead, this, &MainWindow::readPendingDatagrams);
                 }
             } catch (...)
@@ -856,6 +977,7 @@ void MainWindow::setUDPConnection(ConnectionStatus connectionStatus)
                 terminalError("Привязка UDP сокета");
             }
         }
+
         break;
     }
     case OFF:
@@ -864,18 +986,24 @@ void MainWindow::setUDPConnection(ConnectionStatus connectionStatus)
         {
             disconnect(_udpSocket, &QUdpSocket::readyRead, nullptr, nullptr);
             _udpSocket->close();
+
             qDebug() << "UDP сокет освобожден -- OK";
             terminalInfo("UDP сокет освобожден -- OK");
+
             delete _udpSocket;
+
             qDebug() << "UDP сокет уничтожен";
             terminalWarning("UDP сокет уничтожен");
         }
+
         break;
     }
+
     case UNKNOWN:
         break;
     }
 }
+
 void MainWindow::readPendingDatagrams()
 {
     while (_udpSocket->hasPendingDatagrams())
@@ -884,21 +1012,25 @@ void MainWindow::readPendingDatagrams()
         datagram.resize(_udpSocket->pendingDatagramSize());
         QHostAddress sender;
         quint16 senderPort;
+
         _udpSocket->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
         processUDPData(datagram);
     }
 }
+
 void MainWindow::processUDPData(const QByteArray &data)
 {
     if (data.size() == _appSet.DATA_PACKET_SIZE)
     {
         // Передача пакета данных
+
         float x, y, w, h, confidence;
         int32_t index, track_id;
         QDataStream stream(data);
         stream.setByteOrder(QDataStream::LittleEndian);
         stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
         stream >> x >> y >> w >> h >> confidence >> index >> track_id;
+
         QMutexLocker locker(&_boxesMutex);
         BoundingBox box;
         box.x = x;
@@ -908,16 +1040,17 @@ void MainWindow::processUDPData(const QByteArray &data)
         box.confidence = confidence;
         box.track_id = track_id;
         box.selected = true;
+
         QString box_info = QString::number(track_id) + ": (" + QString::number(x) + ";" + QString::number(y) + ") [" + QString::number(w) + ";" + QString::number(h) + "]";
         terminalInfo(box_info);
         qDebug() << box_info;
+
         _boxesMap[track_id] = box; // Добавляем бокс в карту
     }
     else if (data.size() == 1)
     {
         // Окончание передачи
         QMutexLocker locker(&_boxesMutex);
-        _lastBoxesMap = _boxesMap;  // Копируем
         emit updateTargetInfo((int)_boxesMap.count());
         _boxesMap.clear();
     }
@@ -931,6 +1064,7 @@ void MainWindow::processUDPData(const QByteArray &data)
         terminalError(QString("Неверный размер UDP-данных: ") +  QString::number(data.size()));
     }
 }
+
 void MainWindow::updateTargetInfo(int targetcount)
 {
     ui->lbInfoPanelTargetTotalValue->setText(QString::number(targetcount));

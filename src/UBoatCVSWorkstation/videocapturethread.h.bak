@@ -16,7 +16,7 @@ public:
     void stop();
 
 signals:
-    void frameReady(const cv::Mat &frame);
+    void frameReady(cv::Mat &frame);
     void captureError(const QString &error);
     void captureOpened();
 

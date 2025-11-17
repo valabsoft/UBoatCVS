@@ -9,7 +9,6 @@
 #include <QImage>
 #include <QUdpSocket>
 #include <QMutex>
-#include <QMap>
 
 #include "applicationsettings.h"
 #include "applicationcommon.h"
@@ -78,7 +77,6 @@ private:
 
     void processUDPData(const QByteArray &data);
     QMap<int, BoundingBox> _boxesMap;
-    QMap<int, BoundingBox>_lastBoxesMap;
     QMutex _boxesMutex;
 
     VideoCaptureThread *_videoCaptureThread;
@@ -91,8 +89,6 @@ private:
 
     void updateTargetInfo(int targetcount);
 
-    cv::Mat _staticOverlay;
-    void createStaticOverlay();
 
 signals:
     void cameraStatusChanged(ConnectionStatus);
@@ -108,11 +104,10 @@ private slots:
 
     void readPendingDatagrams();
 
-    void updateImage(const cv::Mat &frame);
+    void updateImage(cv::Mat &frame);
     void handleCaptureError(const QString &error);
     void handleCaptureOpened();
 
     void drawGraphicalObjects(cv::Mat &frame);
-
 };
 #endif // MAINWINDOW_H

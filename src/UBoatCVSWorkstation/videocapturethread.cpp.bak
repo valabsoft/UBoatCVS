@@ -1,5 +1,4 @@
 #include "videocapturethread.h"
-#include <QDebug>
 
 VideoCaptureThread::VideoCaptureThread() {}
 
@@ -35,7 +34,7 @@ void VideoCaptureThread::run()
             if (capture.read(frame) && !frame.empty())
             {
                 QMutexLocker locker(&frameMutex);
-                emit frameReady(frame.clone());
+                emit frameReady(frame);
             } else
             {
                 emit captureError("Не удалось прочитать кадр или получен пустой кадр");
