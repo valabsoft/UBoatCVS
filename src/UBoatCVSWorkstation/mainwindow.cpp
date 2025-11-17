@@ -447,7 +447,7 @@ void MainWindow::onCameraStatusChanged()
                 }
                 else
                 {
-                    _capture = new cv::VideoCapture("C:\\VID_20250501_082326_854_480.mp4", cv::CAP_FFMPEG);
+                    _capture = new cv::VideoCapture("C:\\VID_20250501_082326_800_600.mp4", cv::CAP_FFMPEG);
                     _fps = _capture->get(cv::CAP_PROP_FPS);
                     _totalFrames = _capture->get(cv::CAP_PROP_FRAME_COUNT);
                 }
@@ -625,6 +625,81 @@ void MainWindow::drawGraphicalObjects(cv::Mat &frame)
 
     if (_appSet.DRAW_GRID)
     {
+        _appSet.GRID_V_DELTA = _appSet.CAMERA_HEIGHT / 75;
+        _appSet.GRID_H_DELTA = _appSet.CAMERA_WIDTH / 100;
+
+        _appSet.XV0 = _appSet.CAMERA_WIDTH / 5;
+        _appSet.YV0 = _appSet.CAMERA_HEIGHT / 2 - _appSet.GRID_V_DELTA * floor(_appSet.GRID_V_MAX / 2) * 10;
+
+        _appSet.XH0 = _appSet.CAMERA_WIDTH / 2 - _appSet.GRID_H_DELTA * floor(_appSet.GRID_H_MAX / 2) * 10;
+        _appSet.YH0 = _appSet.CAMERA_HEIGHT / 10;
+
+        ///////////////////////////////////////////////////////////////////////
+        // Риски горизонтальные (верх)
+        ///////////////////////////////////////////////////////////////////////
+        for (int i = 1; i < _appSet.GRID_H_MAX; i++)
+        {
+            // Основная риска
+            cv::line(frame,
+                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), _appSet.YH0),
+                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), _appSet.YH0 + _appSet.GRID_BIG_SIZE),
+                     CV_RGB(255, 255, 255),
+                     2,
+                     cv::LINE_8);
+
+            // Дополнительные риски
+            for (int j = 1; j < 10; j++)
+            {
+                cv::line(frame,
+                         cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA, _appSet.YH0 + _appSet.GRID_SMALL_SIZE),
+                         cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA , _appSet.YH0 + 2 * _appSet.GRID_SMALL_SIZE),
+                         CV_RGB(255, 255, 255),
+                         1,
+                         cv::LINE_8);
+            }
+        }
+        // Завершающая
+        cv::line(frame,
+                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.YH0),
+                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.YH0 + _appSet.GRID_BIG_SIZE),
+                 CV_RGB(255, 255, 255),
+                 2,
+                 cv::LINE_8);
+
+        ///////////////////////////////////////////////////////////////////////
+        // Риски горизонтальные (низ)
+        ///////////////////////////////////////////////////////////////////////
+        for (int i = 1; i < _appSet.GRID_H_MAX; i++)
+        {
+            cv::line(frame,
+                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1),
+                               _appSet.CAMERA_HEIGHT - _appSet.CAMERA_HEIGHT / 10 - _appSet.GRID_BIG_SIZE),
+                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1),
+                               _appSet.CAMERA_HEIGHT - _appSet.CAMERA_HEIGHT / 10),
+                     CV_RGB(255, 255, 255),
+                     2,
+                     cv::LINE_8);
+
+            for (int j = 1; j < 10; j++)
+            {
+                cv::line(frame,
+                         cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA,
+                                   _appSet.CAMERA_HEIGHT - _appSet.CAMERA_HEIGHT / 10 - _appSet.GRID_BIG_SIZE),
+                         cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA,
+                                   _appSet.CAMERA_HEIGHT - _appSet.CAMERA_HEIGHT / 10 - _appSet.GRID_BIG_SIZE + _appSet.GRID_SMALL_SIZE),
+                         CV_RGB(255, 255, 255),
+                         1,
+                         cv::LINE_8);
+            }
+        }
+        // Завершающая
+        cv::line(frame,
+                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.CAMERA_HEIGHT - _appSet.CAMERA_HEIGHT / 10 - _appSet.GRID_BIG_SIZE),
+                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.CAMERA_HEIGHT - _appSet.CAMERA_HEIGHT / 10),
+                 CV_RGB(255, 255, 255),
+                 2,
+                 cv::LINE_8);
+
         ///////////////////////////////////////////////////////////////////////
         // Риски вертикальные (левые)
         ///////////////////////////////////////////////////////////////////////
@@ -682,67 +757,6 @@ void MainWindow::drawGraphicalObjects(cv::Mat &frame)
         cv::line(frame,
                  cv::Point(X0 + (X0 - _appSet.XV0) - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
                  cv::Point(X0 + (X0 - _appSet.XV0) + _appSet.GRID_BIG_SIZE - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
-                 CV_RGB(255, 255, 255),
-                 2,
-                 cv::LINE_8);
-
-
-        ///////////////////////////////////////////////////////////////////////
-        // Риски горизонтальные (верх)
-        ///////////////////////////////////////////////////////////////////////
-        for (int i = 1; i < _appSet.GRID_H_MAX; i++)
-        {
-            cv::line(frame,
-                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), _appSet.YH0),
-                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), _appSet.YH0 + _appSet.GRID_BIG_SIZE),
-                     CV_RGB(255, 255, 255),
-                     2,
-                     cv::LINE_8);
-
-            for (int j = 1; j < 10; j++)
-            {
-                cv::line(frame,
-                         cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA, _appSet.YH0 + _appSet.GRID_SMALL_SIZE),
-                         cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA , _appSet.YH0 + 2 * _appSet.GRID_SMALL_SIZE),
-                         CV_RGB(255, 255, 255),
-                         1,
-                         cv::LINE_8);
-            }
-        }
-        // Завершающая
-        cv::line(frame,
-                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.YH0),
-                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.YH0 + _appSet.GRID_BIG_SIZE),
-                 CV_RGB(255, 255, 255),
-                 2,
-                 cv::LINE_8);
-
-        ///////////////////////////////////////////////////////////////////////
-        // Риски горизонтальные (низ)
-        ///////////////////////////////////////////////////////////////////////
-        for (int i = 1; i < _appSet.GRID_H_MAX; i++)
-        {
-            cv::line(frame,
-                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), Y0 + (Y0 - _appSet.YV0) + 30),
-                     cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), Y0 + (Y0 - _appSet.YV0) + _appSet.GRID_BIG_SIZE + 30),
-                     CV_RGB(255, 255, 255),
-                     2,
-                     cv::LINE_8);
-
-            for (int j = 1; j < 10; j++)
-            {
-                cv::line(frame,
-                         cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA, Y0 + (Y0 - _appSet.YV0) + 30),
-                         cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA , Y0 + (Y0 - _appSet.YV0) + _appSet.GRID_SMALL_SIZE + 30),
-                         CV_RGB(255, 255, 255),
-                         1,
-                         cv::LINE_8);
-            }
-        }
-        // Завершающая
-        cv::line(frame,
-                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), Y0 + (Y0 - _appSet.YV0) + 30),
-                 cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), Y0 + (Y0 - _appSet.YV0) + _appSet.GRID_BIG_SIZE + 30),
                  CV_RGB(255, 255, 255),
                  2,
                  cv::LINE_8);

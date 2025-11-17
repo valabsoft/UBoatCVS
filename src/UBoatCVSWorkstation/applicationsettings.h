@@ -16,8 +16,8 @@ public:
     void save();
 
     int CAMERA_ID = 0;
-    int CAMERA_WIDTH = 854 /*640*/ /*1280*/;
-    int CAMERA_HEIGHT = 480 /*480*/ /*720*/;
+    int CAMERA_WIDTH = 800 /*640*/ /*1280*/;
+    int CAMERA_HEIGHT = 600 /*480*/ /*720*/;
     int CAMERA_FPS = 30;
     int VIDEO_TIMER_INTERVAL = 100;
 
@@ -38,15 +38,16 @@ public:
 
     const int GRID_SMALL_SIZE = 15; // Размер маленьких рисочек
     const int GRID_BIG_SIZE = 30; // Размер больших рисочек
-    const int GRID_V_DELTA = CAMERA_HEIGHT / 75; // Плотность вертикальных
+    int GRID_V_DELTA = CAMERA_HEIGHT / 100; // Плотность вертикальных
     const int GRID_V_MAX = 5;
-    const int GRID_H_DELTA = CAMERA_WIDTH / 100; // Плотность горизонтальных
+    int GRID_H_DELTA = CAMERA_WIDTH / 100; // Плотность горизонтальных
     const int GRID_H_MAX = 5;
 
-    const int XV0 = CAMERA_WIDTH / 5;
-    const int YV0 = CAMERA_HEIGHT / 2 - GRID_V_DELTA * 2 * 10;
-    const int XH0 = CAMERA_WIDTH / 2 - GRID_H_DELTA * 2 * 10;
-    const int YH0 = CAMERA_HEIGHT / 10;
+    int XV0 = CAMERA_WIDTH / 5;
+    int YV0 = CAMERA_HEIGHT / 2 - GRID_V_DELTA * GRID_V_MAX / 2 * 10; // CAMERA_HEIGHT / 2 - GRID_V_DELTA * 2 * 10;
+
+    int XH0 = CAMERA_WIDTH / 2 - GRID_H_DELTA * GRID_H_MAX / 2 * 10; // CAMERA_WIDTH / 2 - GRID_H_DELTA * 2 * 10;
+    int YH0 = CAMERA_HEIGHT / 10;
 
     int PORT_VIDEO = 8010;
     int PORT_DATA = 6000;
