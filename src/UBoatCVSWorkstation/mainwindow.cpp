@@ -445,6 +445,15 @@ void MainWindow::onPacketStatusChanged()
     case ConnectionStatus::OFF:
         qDebug() << "onPacketStatusChanged(): OFF";
         terminalInfo("onPacketStatusChanged(): OFF");
+
+        // Очистка bounding boxes при отключении
+        {
+            QMutexLocker locker(&_boxesMutex);
+            _boxesMap.clear();
+            _lastBoxesMap.clear();
+        }
+        updateTargetInfo(0);
+
         break;
     case ConnectionStatus::ON:
         qDebug() << "onPacketStatusChanged(): ON";
