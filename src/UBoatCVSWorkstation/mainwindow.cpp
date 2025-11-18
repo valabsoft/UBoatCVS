@@ -28,8 +28,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->pbSettings, &QPushButton::clicked, this, &MainWindow::onSettingsButtonClicked);
     connect(this, &MainWindow::cameraStatusChanged, this, &MainWindow::onCameraStatusChanged);
     connect(this, &MainWindow::packetStatusChanged, this, &MainWindow::onPacketStatusChanged);
-    // Создаём статичный overlay для прицела и сетки
-    createStaticOverlay();
 }
 MainWindow::~MainWindow()
 {
@@ -456,8 +454,17 @@ void MainWindow::onPacketStatusChanged()
         break;
     }
 }
-void MainWindow::createStaticOverlay() {
-    _staticOverlay = cv::Mat(_appSet.CAMERA_HEIGHT, _appSet.CAMERA_WIDTH, CV_8UC3, cv::Scalar(0, 0, 0));  // Прозрачный чёрный
+
+void MainWindow::drawGraphicalObjects(cv::Mat &frame)
+{
+#pragma region Draw Graphical Objects
+    cv::Mat overlayImage;
+    cv::Mat transparencyiImage;
+
+    // Конвертация BGR в RGB для Qt
+    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+
+    frame.copyTo(overlayImage);
 
     int X0 = _appSet.CAMERA_WIDTH / 2;
     int Y0 = _appSet.CAMERA_HEIGHT / 2;
@@ -465,7 +472,7 @@ void MainWindow::createStaticOverlay() {
     if (_appSet.DRAW_SIGHT)
     {
         // Внешний контур прицела
-        roundedRectangle(_staticOverlay,
+        roundedRectangle(frame,
                          cv::Point(X0 - _appSet.SIGHT_SIZE, Y0 - _appSet.SIGHT_SIZE),
                          cv::Point(X0 + _appSet.SIGHT_SIZE, Y0 + _appSet.SIGHT_SIZE),
                          CV_RGB(0, 255, 255),
@@ -474,25 +481,25 @@ void MainWindow::createStaticOverlay() {
                          10);
 
         // Рисочки внешнего контура
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0, Y0 - _appSet.SIGHT_SIZE),
                  cv::Point(X0, Y0 - _appSet.SIGHT_SIZE + _appSet.SIGHT_TICK),
                  CV_RGB(0, 255, 255),
                  1,
                  cv::LINE_8);
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0, Y0 + _appSet.SIGHT_SIZE),
                  cv::Point(X0, Y0 + _appSet.SIGHT_SIZE - _appSet.SIGHT_TICK),
                  CV_RGB(0, 255, 255),
                  1,
                  cv::LINE_8);
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0 - _appSet.SIGHT_SIZE, Y0 ),
                  cv::Point(X0 - _appSet.SIGHT_SIZE + _appSet.SIGHT_TICK, Y0),
                  CV_RGB(0, 255, 255),
                  1,
                  cv::LINE_8);
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0 + _appSet.SIGHT_SIZE, Y0 ),
                  cv::Point(X0 + _appSet.SIGHT_SIZE - _appSet.SIGHT_TICK, Y0),
                  CV_RGB(0, 255, 255),
@@ -500,26 +507,26 @@ void MainWindow::createStaticOverlay() {
                  cv::LINE_8);
 
         // Рисочки внутреннего прицела
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0 - _appSet.SIGHT_DELTA, Y0),
                  cv::Point(X0 - _appSet.SIGHT_DELTA - _appSet.SIGHT_CROSS, Y0),
                  CV_RGB(255, 255, 255),
                  1,
                  cv::LINE_8);
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0 + _appSet.SIGHT_DELTA, Y0),
                  cv::Point(X0 + _appSet.SIGHT_DELTA + _appSet.SIGHT_CROSS, Y0),
                  CV_RGB(255, 255, 255),
                  1,
                  cv::LINE_8);
 
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0, Y0 - _appSet.SIGHT_DELTA),
                  cv::Point(X0, Y0 - _appSet.SIGHT_DELTA - _appSet.SIGHT_CROSS),
                  CV_RGB(255, 255, 255),
                  1,
                  cv::LINE_8);
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0, Y0 + _appSet.SIGHT_DELTA),
                  cv::Point(X0, Y0 + _appSet.SIGHT_DELTA + _appSet.SIGHT_CROSS),
                  CV_RGB(255, 255, 255),
@@ -544,7 +551,7 @@ void MainWindow::createStaticOverlay() {
         for (int i = 1; i < _appSet.GRID_H_MAX; i++)
         {
             // Основная риска
-            cv::line(_staticOverlay,
+            cv::line(frame,
                      cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), _appSet.YH0),
                      cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1), _appSet.YH0 + _appSet.GRID_BIG_SIZE),
                      CV_RGB(255, 255, 255),
@@ -554,7 +561,7 @@ void MainWindow::createStaticOverlay() {
             // Дополнительные риски
             for (int j = 1; j < 10; j++)
             {
-                cv::line(_staticOverlay,
+                cv::line(frame,
                          cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA, _appSet.YH0 + _appSet.GRID_SMALL_SIZE),
                          cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA , _appSet.YH0 + 2 * _appSet.GRID_SMALL_SIZE),
                          CV_RGB(255, 255, 255),
@@ -563,7 +570,7 @@ void MainWindow::createStaticOverlay() {
             }
         }
         // Завершающая
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.YH0),
                  cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.YH0 + _appSet.GRID_BIG_SIZE),
                  CV_RGB(255, 255, 255),
@@ -575,7 +582,7 @@ void MainWindow::createStaticOverlay() {
         ///////////////////////////////////////////////////////////////////////
         for (int i = 1; i < _appSet.GRID_H_MAX; i++)
         {
-            cv::line(_staticOverlay,
+            cv::line(frame,
                      cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1),
                                _appSet.CAMERA_HEIGHT - _appSet.CAMERA_HEIGHT / 10 - _appSet.GRID_BIG_SIZE),
                      cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1),
@@ -586,7 +593,7 @@ void MainWindow::createStaticOverlay() {
 
             for (int j = 1; j < 10; j++)
             {
-                cv::line(_staticOverlay,
+                cv::line(frame,
                          cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA,
                                    _appSet.CAMERA_HEIGHT - _appSet.CAMERA_HEIGHT / 10 - _appSet.GRID_BIG_SIZE),
                          cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (i - 1) + j * _appSet.GRID_H_DELTA,
@@ -597,7 +604,7 @@ void MainWindow::createStaticOverlay() {
             }
         }
         // Завершающая
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.CAMERA_HEIGHT - _appSet.CAMERA_HEIGHT / 10 - _appSet.GRID_BIG_SIZE),
                  cv::Point(_appSet.XH0 + _appSet.GRID_H_DELTA * 10 * (_appSet.GRID_H_MAX - 1), _appSet.CAMERA_HEIGHT - _appSet.CAMERA_HEIGHT / 10),
                  CV_RGB(255, 255, 255),
@@ -609,7 +616,7 @@ void MainWindow::createStaticOverlay() {
         ///////////////////////////////////////////////////////////////////////
         for (int i = 1; i < _appSet.GRID_V_MAX; i++)
         {
-            cv::line(_staticOverlay,
+            cv::line(frame,
                      cv::Point(_appSet.XV0, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
                      cv::Point(_appSet.XV0 + _appSet.GRID_BIG_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
                      CV_RGB(255, 255, 255),
@@ -618,7 +625,7 @@ void MainWindow::createStaticOverlay() {
 
             for (int j = 1; j < 10; j++)
             {
-                cv::line(_staticOverlay,
+                cv::line(frame,
                          cv::Point(_appSet.XV0 + _appSet.GRID_SMALL_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
                          cv::Point(_appSet.XV0 + 2 * _appSet.GRID_SMALL_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
                          CV_RGB(255, 255, 255),
@@ -627,7 +634,7 @@ void MainWindow::createStaticOverlay() {
             }
         }
         // Завершающая
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(_appSet.XV0, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
                  cv::Point(_appSet.XV0 + _appSet.GRID_BIG_SIZE, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
                  CV_RGB(255, 255, 255),
@@ -640,7 +647,7 @@ void MainWindow::createStaticOverlay() {
         ///////////////////////////////////////////////////////////////////////
         for (int i = 1; i < _appSet.GRID_V_MAX; i++)
         {
-            cv::line(_staticOverlay,
+            cv::line(frame,
                      cv::Point(X0 + (X0 - _appSet.XV0) - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
                      cv::Point(X0 + (X0 - _appSet.XV0) + _appSet.GRID_BIG_SIZE - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1)),
                      CV_RGB(255, 255, 255),
@@ -649,7 +656,7 @@ void MainWindow::createStaticOverlay() {
 
             for (int j = 1; j < 10; j++)
             {
-                cv::line(_staticOverlay,
+                cv::line(frame,
                          cv::Point(X0 + (X0 - _appSet.XV0) - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
                          cv::Point(X0 + (X0 - _appSet.XV0) + _appSet.GRID_SMALL_SIZE - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (i - 1) + j * _appSet.GRID_V_DELTA),
                          CV_RGB(255, 255, 255),
@@ -658,27 +665,12 @@ void MainWindow::createStaticOverlay() {
             }
         }
         // Завершающая
-        cv::line(_staticOverlay,
+        cv::line(frame,
                  cv::Point(X0 + (X0 - _appSet.XV0) - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
                  cv::Point(X0 + (X0 - _appSet.XV0) + _appSet.GRID_BIG_SIZE - 30, _appSet.YV0 + _appSet.GRID_V_DELTA * 10 * (_appSet.GRID_V_MAX - 1)),
                  CV_RGB(255, 255, 255),
                  2,
                  cv::LINE_8);
-    }
-
-
-}
-void MainWindow::drawGraphicalObjects(cv::Mat &frame)
-{
-    // Конвертация BGR в RGB для Qt
-    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
-
-    // Накладываем статичный overlay (если нужна прозрачность — используем addWeighted только здесь)
-    if (!_staticOverlay.empty()) {
-        // Без прозрачности: просто добавляем (быстрее)
-        cv::add(frame, _staticOverlay, frame);  // Если _staticOverlay имеет непрозрачные пиксели
-        // С прозрачностью (если ALPHA > 0, но это медленнее — закомментируйте если не нужно):
-        // cv::addWeighted(frame, 1 - _appSet.ALPHA, _staticOverlay, _appSet.ALPHA, 0, frame);
     }
 
     // Отрисовка BoundingBoxes (без addWeighted, напрямую)
@@ -702,7 +694,12 @@ void MainWindow::drawGraphicalObjects(cv::Mat &frame)
     }
 
     // Создаём QImage напрямую из frame (без transparencyiImage)
-    _image = QImage(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888).copy();  // .copy() для безопасности
+    _image = QImage((uchar*) frame.data,
+                    frame.cols,
+                    frame.rows,
+                    frame.step,
+                    QImage::Format_RGB888).copy();
+
     ui->labelCameraView->setPixmap(QPixmap::fromImage(_image));
 }
 void MainWindow::onVideoTimer()

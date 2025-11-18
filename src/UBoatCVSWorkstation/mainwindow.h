@@ -91,9 +91,6 @@ private:
 
     void updateTargetInfo(int targetcount);
 
-    cv::Mat _staticOverlay;
-    void createStaticOverlay();
-
 signals:
     void cameraStatusChanged(ConnectionStatus);
     void packetStatusChanged(ConnectionStatus);
