@@ -478,6 +478,25 @@ void MainWindow::drawGraphicalObjects(cv::Mat &frame)
     int X0 = _appSet.CAMERA_WIDTH / 2;
     int Y0 = _appSet.CAMERA_HEIGHT / 2;
 
+    QMutexLocker locker(&_boxesMutex);
+    QMap<int, BoundingBox> localBoxes = _lastBoxesMap;
+    locker.unlock();
+    for (const auto &box : std::as_const(localBoxes))
+    {
+        cv::Scalar color = box.selected ? cv::Scalar(0, 0, 255) : cv::Scalar(0, 255, 0);
+        int thickness = box.selected ? 3 : 2;
+        cv::rectangle(frame,
+                      cv::Point(box.x, box.y),
+                      cv::Point(box.x + box.w, box.y + box.h),
+                      color, thickness);
+        /*
+        std::string text = "ID:" + std::to_string(box.track_id) + " Conf:" + std::to_string(box.confidence).substr(0, 4);
+        cv::putText(frame, text,
+                    cv::Point(box.x, box.y - 5),
+                    cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1);
+        */
+    }
+
     if (_appSet.DRAW_SIGHT)
     {
         // Внешний контур прицела
@@ -650,7 +669,6 @@ void MainWindow::drawGraphicalObjects(cv::Mat &frame)
                  2,
                  cv::LINE_8);
 
-
         ///////////////////////////////////////////////////////////////////////
         // Риски вертикальные (правые)
         ///////////////////////////////////////////////////////////////////////
@@ -680,26 +698,6 @@ void MainWindow::drawGraphicalObjects(cv::Mat &frame)
                  CV_RGB(255, 255, 255),
                  2,
                  cv::LINE_8);
-    }
-
-    // Отрисовка BoundingBoxes (без addWeighted, напрямую)
-    QMutexLocker locker(&_boxesMutex);  // Короткий лок, только для копии
-    QMap<int, BoundingBox> localBoxes = _lastBoxesMap;  // Локальная копия для безопасного рисования
-    locker.unlock();  // Разблокируем сразу
-    for (const auto &box : std::as_const(localBoxes))
-    {
-        cv::Scalar color = box.selected ? cv::Scalar(0, 0, 255) : cv::Scalar(0, 255, 0);
-        int thickness = box.selected ? 3 : 2;
-        cv::rectangle(frame,
-                      cv::Point(box.x, box.y),
-                      cv::Point(box.x + box.w, box.y + box.h),
-                      color, thickness);
-        /*
-        std::string text = "ID:" + std::to_string(box.track_id) + " Conf:" + std::to_string(box.confidence).substr(0, 4);
-        cv::putText(frame, text,
-                    cv::Point(box.x, box.y - 5),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1);
-        */
     }
 
     // Создаём QImage напрямую из frame (без transparencyiImage)
