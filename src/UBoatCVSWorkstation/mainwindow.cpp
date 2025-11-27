@@ -13,7 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
     // Иконка главного окна
     setWindowIcon(QIcon(":/img/sight.png"));
     setGeometry();          // Геометрия окон
-    setStyle(Theme::WHITE); // Установка темы приложения
+    setStyle(static_cast<Theme>(_appSet.THEME)); // Установка темы приложения
     setButtonIcons();       // Установка иконок
     _videoTimer = new QTimer(this);
     connect(_videoTimer, &QTimer::timeout, this, &MainWindow::onVideoTimer);
@@ -187,6 +187,7 @@ void MainWindow::setStyle(Theme theme) {
     {
     case Theme::WHITE:
     {
+        this->setStyleSheet("background-color: QPalette::Window;");
         ui->lbCameraView->setStyleSheet("QLabel {"
                                            "border-style: solid;"
                                            "border-width: 1px;"
@@ -219,15 +220,15 @@ void MainWindow::setStyle(Theme theme) {
         // Стиль окна терминала
         ui->plainTextEdit->setReadOnly(true);
         ui->plainTextEdit->setFont(QFont("Consolas", 10)); // Моноширинный шрифт
-        //ui->plainTextEdit->setStyleSheet(
-        //    "QPlainTextEdit {"
-        //    "    background-color: #000000;"
-        //    "    color: #00FF00;"
-        //    "    border: 1px solid #333;"
-        //    "    font-family: 'Courier New', monospace;"
-        //    "    selection-background-color: #555;"
-        //    "}"
-        //    );
+        ui->plainTextEdit->setStyleSheet(
+            "QPlainTextEdit {"
+            "    background-color: QPalette::Base;"
+            "    color: #00FF00;"
+            "    border: 1px solid #333;"
+            "    font-family: 'Courier New', monospace;"
+            "    selection-background-color: #555;"
+            "}"
+            );
         break;
     }
     case Theme::BLACK:
@@ -905,6 +906,7 @@ void MainWindow::onSettingsButtonClicked()
     if (_settingsWindow->exec() == QDialog::Accepted)
     {
         _appSet.load();
+        setStyle(static_cast<Theme>(_appSet.THEME));
     }
     delete _settingsWindow;
 }

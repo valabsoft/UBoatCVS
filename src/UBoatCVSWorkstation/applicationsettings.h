@@ -26,6 +26,8 @@ public:
     bool DRAW_GRID = true;
     bool DRAW_TIMESTAMP = true;
 
+    int THEME = 0;
+
     const int BORDER_SIZE = 10;
     const int PANEL_TOOL_SIZE = 100;
     const int PANEL_INFO_SIZE = 300;

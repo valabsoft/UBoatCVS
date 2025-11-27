@@ -32,6 +32,7 @@ void ApplicationSettings::load()
     TEST_MODE = settings.value("/TEST_MODE", "0").toBool();
     PORT_VIDEO = settings.value("/PORT_VIDEO", "8010").toInt();
     PORT_DATA = settings.value("/PORT_DATA", "6000").toInt();
+    THEME = settings.value("/THEME", "0").toInt();
     settings.endGroup();
 }
 
@@ -57,5 +58,6 @@ void ApplicationSettings::save()
     settings.setValue("/TEST_MODE", TEST_MODE);
     settings.setValue("/PORT_VIDEO", PORT_VIDEO);
     settings.setValue("/PORT_DATA", PORT_DATA);
+    settings.setValue("/THEME", THEME);
     settings.endGroup();
 }
