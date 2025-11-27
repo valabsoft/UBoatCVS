@@ -88,6 +88,7 @@ private:
     void processUDPData(const QByteArray &data);
     QMap<int, BoundingBox> _boxesMap;
     QMap<int, BoundingBox> _lastBoxesMap;
+    QSet<int> _selectedID;
     QMutex _boxesMutex;
 
     VideoCaptureThread *_videoCaptureThread;

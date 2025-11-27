@@ -100,6 +100,16 @@ void MainWindow::selectBox(int track_id)
         box.selected = !box.selected; // Меняем состоятние на противоположное
     }
 
+    if (_selectedID.contains(track_id))
+    {
+        _selectedID.remove(track_id); // Элемент уже выделен, снимаем выделение
+    }
+    else
+    {
+        _selectedID.insert(track_id); // Элемент не выделен, устанавливаем выделение
+    }
+
+
     // Не вызываем никакие методы
     // _lastBoxesMap будет использован при следующем вызове onVideoTimer()
 
@@ -348,6 +358,7 @@ void MainWindow::onResetButtonClicked()
     {
         box.selected = false;
     }
+    _selectedID.clear(); // Сброс выделения
 
     clearTerminal();
     terminalError("Выполнен сброс");
@@ -558,8 +569,11 @@ void MainWindow::drawGraphicalObjects(cv::Mat &frame)
     locker.unlock();
     for (const auto &box : std::as_const(localBoxes))
     {
-        cv::Scalar color = box.selected ? cv::Scalar(0, 0, 255) : cv::Scalar(0, 255, 0);
-        int thickness = box.selected ? 3 : 2;
+        bool boxSelected = _selectedID.contains(box.track_id);
+        cv::Scalar color = boxSelected /*box.selected*/ ? cv::Scalar(80, 175, 76) : cv::Scalar(217, 102, 60);
+        // int thickness = boxSelected /*box.selected*/ ? 2 : 2;
+        int thickness = 2;
+
         cv::rectangle(frame,
                       cv::Point(box.x, box.y),
                       cv::Point(box.x + box.w, box.y + box.h),
