@@ -24,6 +24,7 @@ public:
     bool TEST_MODE = true;
     bool DRAW_SIGHT = true;
     bool DRAW_GRID = true;
+    bool DRAW_TIMESTAMP = true;
 
     const int BORDER_SIZE = 10;
     const int PANEL_TOOL_SIZE = 100;

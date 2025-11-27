@@ -24,6 +24,7 @@ void ApplicationSettings::load()
     settings.beginGroup("/SCREEN_SETTINGS");
     DRAW_SIGHT = settings.value("/DRAW_SIGHT", "0").toBool();
     DRAW_GRID = settings.value("/DRAW_GRID", "0").toBool();
+    DRAW_TIMESTAMP = settings.value("/DRAW_TIMESTAMP", "0").toBool();
     settings.endGroup();
 
     // General Setting
@@ -49,6 +50,7 @@ void ApplicationSettings::save()
     settings.beginGroup("/SCREEN_SETTINGS");
     settings.setValue("/DRAW_SIGHT", DRAW_SIGHT);
     settings.setValue("/DRAW_GRID", DRAW_GRID);
+    settings.setValue("/DRAW_TIMESTAMP", DRAW_TIMESTAMP);
     settings.endGroup();
 
     settings.beginGroup("/GENERAL_SETTINGS");

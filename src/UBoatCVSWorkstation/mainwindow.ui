@@ -299,7 +299,7 @@
      </layout>
     </widget>
    </widget>
-   <widget class="QLabel" name="labelCameraView">
+   <widget class="QLabel" name="lbCameraView">
     <property name="geometry">
      <rect>
       <x>318</x>

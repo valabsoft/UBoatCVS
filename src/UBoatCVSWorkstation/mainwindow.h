@@ -10,6 +10,7 @@
 #include <QUdpSocket>
 #include <QMutex>
 #include <QMap>
+#include <QEvent>
 
 #include "applicationsettings.h"
 #include "applicationcommon.h"
@@ -35,7 +36,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 public:
     MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();    
+    ~MainWindow();
 
     void setGeometry();
     void setButtonIcons();
@@ -63,7 +64,15 @@ public:
         const int lineType,
         const int cornerRadius);
 
+    int getTrackIdAtPoint(const QPoint &pos);
+    void selectBox(int track_id);
+
+protected:
+    // Объявление метода eventFilter
+    bool eventFilter(QObject *obj, QEvent *event) override;
+
 private:
+    cv::Mat _cvImage;
     Ui::MainWindow *ui;
     ApplicationSettings _appSet; // Уставки приложения
     UBoatModel *_model;
@@ -78,7 +87,7 @@ private:
 
     void processUDPData(const QByteArray &data);
     QMap<int, BoundingBox> _boxesMap;
-    QMap<int, BoundingBox>_lastBoxesMap;
+    QMap<int, BoundingBox> _lastBoxesMap;
     QMutex _boxesMutex;
 
     VideoCaptureThread *_videoCaptureThread;
@@ -89,7 +98,7 @@ private:
     QUdpSocket *_udpSocket;
     bool tryOpenVideoCapture();
 
-    void updateTargetInfo(int targetcount);
+    void updateTargetInfo(int targetcount, int activetargetcount);
 
 signals:
     void cameraStatusChanged(ConnectionStatus);
@@ -102,6 +111,7 @@ private slots:
     void onPacketStatusChanged();
     void onResetButtonClicked();
     void onSettingsButtonClicked();
+    void onPhotoButtonClicked();
 
     void readPendingDatagrams();
 
@@ -110,6 +120,5 @@ private slots:
     void handleCaptureOpened();
 
     void drawGraphicalObjects(cv::Mat &frame);
-
 };
 #endif // MAINWINDOW_H

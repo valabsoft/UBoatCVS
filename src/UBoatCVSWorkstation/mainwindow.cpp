@@ -28,6 +28,15 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->pbSettings, &QPushButton::clicked, this, &MainWindow::onSettingsButtonClicked);
     connect(this, &MainWindow::cameraStatusChanged, this, &MainWindow::onCameraStatusChanged);
     connect(this, &MainWindow::packetStatusChanged, this, &MainWindow::onPacketStatusChanged);
+    connect(ui->pbPhoto, &QPushButton::clicked, this, &MainWindow::onPhotoButtonClicked);
+    // Event Filter
+    ui->lbCameraView->installEventFilter(this);
+
+    // Деактивируем неиспользуемые кнопки
+    ui->pbPaperplane->setEnabled(false);
+    ui->pbSetTargets->setEnabled(false);
+    ui->pbEarth->setEnabled(false);
+    ui->pbEarth->setEnabled(false);
 }
 MainWindow::~MainWindow()
 {
@@ -40,6 +49,64 @@ MainWindow::~MainWindow()
     delete _model;
     delete ui;
 }
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == ui->lbCameraView && event->type() == QEvent::MouseButtonPress)
+    {
+        QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+        if (mouseEvent->button() == Qt::LeftButton)
+        {
+            int track_id = getTrackIdAtPoint(mouseEvent->pos());
+            if (track_id != -1)
+            {
+                selectBox(track_id);
+                // Этот вызов не нужен.
+                // emit objectClicked(track_id);
+            }
+            return true; // Event handled
+        }
+    }
+    return QMainWindow::eventFilter(obj, event);
+}
+
+int MainWindow::getTrackIdAtPoint(const QPoint &pos)
+{
+    QSize labelSize = size();
+    if (_cvImage.empty()) return -1;
+
+    double scaleX = (double)_cvImage.cols / labelSize.width();
+    double scaleY = (double)_cvImage.rows / labelSize.height();
+
+    int imgX = pos.x() * scaleX;
+    int imgY = pos.y() * scaleY;
+
+    for (const auto &box : _lastBoxesMap)
+    {
+        if (imgX >= box.x && imgX <= box.x + box.w &&
+            imgY >= box.y && imgY <= box.y + box.h)
+        {
+            return box.track_id; // Возвращаем внутренний ID
+        }
+    }
+    return -1;
+}
+
+void MainWindow::selectBox(int track_id)
+{
+    for (auto &box : _lastBoxesMap)
+    {
+        if (box.track_id == track_id)
+        box.selected = !box.selected; // Меняем состоятние на противоположное
+    }
+
+    // Не вызываем никакие методы
+    // _lastBoxesMap будет использован при следующем вызове onVideoTimer()
+
+    // updateDisplay(_lastBoxesMap);
+    // emit onVideoTimer();
+}
+
 void MainWindow::setButtonIcons()
 {
     ui->pbCamera->setIcon(QIcon(":/img/button_off_icon.png"));
@@ -94,7 +161,7 @@ void MainWindow::setGeometry()
         _appSet.PANEL_TOOL_SIZE,
         _appSet.CAMERA_HEIGHT + _appSet.BORDER_SIZE + _appSet.PANEL_TOOL_SIZE);
     // Позиционируем лейбл для вывода изображения
-    ui->labelCameraView->setGeometry(
+    ui->lbCameraView->setGeometry(
         _appSet.BORDER_SIZE * 2 + _appSet.PANEL_INFO_SIZE,
         _appSet.BORDER_SIZE,
         _appSet.CAMERA_WIDTH,
@@ -120,13 +187,13 @@ void MainWindow::setStyle(Theme theme) {
     {
     case Theme::WHITE:
     {
-        ui->labelCameraView->setStyleSheet("QLabel {"
+        ui->lbCameraView->setStyleSheet("QLabel {"
                                            "border-style: solid;"
                                            "border-width: 1px;"
                                            "border-color: dimgrey;"
                                            "color : dimgrey;"
                                            "}");
-        ui->labelCameraView->setFont(fontLabel);
+        ui->lbCameraView->setFont(fontLabel);
         ui->lbCamera->setStyleSheet("color : dimgrey;");
         ui->lbCamera->setFont(fontLabel);
         ui->lbPacket->setStyleSheet("color : dimgrey;");
@@ -166,13 +233,13 @@ void MainWindow::setStyle(Theme theme) {
     case Theme::BLACK:
         // Цвет фона главного окна приложения
         this->setStyleSheet("background-color: black;");
-        ui->labelCameraView->setStyleSheet("QLabel {"
+        ui->lbCameraView->setStyleSheet("QLabel {"
                                            "border-style: solid;"
                                            "border-width: 1px;"
                                            "border-color: silver;"
                                            "color : silver;"
                                            "}");
-        ui->labelCameraView->setFont(fontLabel);
+        ui->lbCameraView->setFont(fontLabel);
         ui->lbCamera->setStyleSheet("background-color : black; color : silver;");
         ui->lbCamera->setFont(fontLabel);
         ui->lbPacket->setStyleSheet("background-color : black; color : silver;");
@@ -275,6 +342,12 @@ void MainWindow::onPacketButtonClicked()
 }
 void MainWindow::onResetButtonClicked()
 {
+    // Сброс всех целей
+    for (auto &box : _lastBoxesMap)
+    {
+        box.selected = false;
+    }
+
     clearTerminal();
     terminalError("Выполнен сброс");
 }
@@ -452,7 +525,7 @@ void MainWindow::onPacketStatusChanged()
             _boxesMap.clear();
             _lastBoxesMap.clear();
         }
-        updateTargetInfo(0);
+        updateTargetInfo(0, 0);
 
         break;
     case ConnectionStatus::ON:
@@ -474,6 +547,7 @@ void MainWindow::drawGraphicalObjects(cv::Mat &frame)
     cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
 
     frame.copyTo(overlayImage);
+    frame.copyTo(_cvImage);
 
     int X0 = _appSet.CAMERA_WIDTH / 2;
     int Y0 = _appSet.CAMERA_HEIGHT / 2;
@@ -700,6 +774,17 @@ void MainWindow::drawGraphicalObjects(cv::Mat &frame)
                  cv::LINE_8);
     }
 
+    if (_appSet.DRAW_TIMESTAMP)
+    {
+        QString timeStamp = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
+        cv::putText(frame,
+                    timeStamp.toStdString(),
+                    cv::Point(5, _appSet.CAMERA_HEIGHT - 10),
+                    cv::FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    CV_RGB(255, 255, 255), 1);
+    }
+
     // Создаём QImage напрямую из frame (без transparencyiImage)
     _image = QImage((uchar*) frame.data,
                     frame.cols,
@@ -707,7 +792,7 @@ void MainWindow::drawGraphicalObjects(cv::Mat &frame)
                     frame.step,
                     QImage::Format_RGB888).copy();
 
-    ui->labelCameraView->setPixmap(QPixmap::fromImage(_image));
+    ui->lbCameraView->setPixmap(QPixmap::fromImage(_image));
 }
 void MainWindow::onVideoTimer()
 {
@@ -921,8 +1006,14 @@ void MainWindow::processUDPData(const QByteArray &data)
     {
         // Окончание передачи
         QMutexLocker locker(&_boxesMutex);
-        _lastBoxesMap = _boxesMap;  // Копируем
-        emit updateTargetInfo((int)_boxesMap.count());
+        _lastBoxesMap = _boxesMap;  // Копируем !!! Здесь стираются все выделенные объекты
+
+        for (auto &box : _lastBoxesMap)
+        {
+            box.selected = false;
+        }
+
+        emit updateTargetInfo((int)_boxesMap.count(), (int)_boxesMap.count());
         _boxesMap.clear();
     }
     else
@@ -935,8 +1026,32 @@ void MainWindow::processUDPData(const QByteArray &data)
         terminalError(QString("Неверный размер UDP-данных: ") +  QString::number(data.size()));
     }
 }
-void MainWindow::updateTargetInfo(int targetcount)
+void MainWindow::updateTargetInfo(int targetcount, int activetargetcount)
 {
     ui->lbInfoPanelTargetTotalValue->setText(QString::number(targetcount));
     ui->lbInfoPanelTargetActiveValue->setText(QString::number(targetcount));
+}
+void MainWindow::onPhotoButtonClicked()
+{
+    QString targetDir = QDir::currentPath();
+    QDir directory(targetDir);
+    QString photoPath = directory.filePath("PHOTO");
+    if (!QDir(photoPath).exists())
+    {
+        directory.mkdir("PHOTO");
+    }
+
+    if (QDir(photoPath).exists())
+    {
+        QPixmap pixmap = ui->lbCameraView->pixmap(Qt::ReturnByValue);
+        if (!pixmap.isNull())
+        {
+            QDateTime currentDateTime = QDateTime::currentDateTime();
+            QString fileName = currentDateTime.toString("'PHOTO'-yyyy-MM-dd-HHmmss'.png'");
+
+            QString fullPath = QDir(photoPath).filePath(fileName);
+            pixmap.save(fullPath);
+        }
+
+    }
 }
