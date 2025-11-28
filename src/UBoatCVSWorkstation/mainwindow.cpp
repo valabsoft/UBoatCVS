@@ -63,9 +63,11 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
                 selectBox(track_id);
                 // Этот вызов не нужен.
                 // emit objectClicked(track_id);
+                terminalInfo(QString::number(track_id));
             }
             return true; // Event handled
         }
+
     }
     return QMainWindow::eventFilter(obj, event);
 }
@@ -73,13 +75,21 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 int MainWindow::getTrackIdAtPoint(const QPoint &pos)
 {
     QSize labelSize = size();
-    if (_cvImage.empty()) return -1;
+    if (_cvImage.empty())
+    {
+        terminalError("Пустой фрайм!");
+        return -1;
+    }
 
-    double scaleX = (double)_cvImage.cols / labelSize.width();
-    double scaleY = (double)_cvImage.rows / labelSize.height();
+    double scaleX = 1;//(double)_cvImage.cols / labelSize.width();
+    double scaleY = 1;//(double)_cvImage.rows / labelSize.height();
+
+    terminalInfo("Map size: " + QString::number(_lastBoxesMap.count()));
 
     int imgX = pos.x() * scaleX;
     int imgY = pos.y() * scaleY;
+
+    terminalInfo("x, y: " + QString::number(imgX) + "," + QString::number(imgY));
 
     for (const auto &box : _lastBoxesMap)
     {
@@ -570,7 +580,7 @@ void MainWindow::drawGraphicalObjects(cv::Mat &frame)
     for (const auto &box : std::as_const(localBoxes))
     {
         bool boxSelected = _selectedID.contains(box.track_id);
-        cv::Scalar color = boxSelected /*box.selected*/ ? cv::Scalar(80, 175, 76) : cv::Scalar(217, 102, 60);
+        cv::Scalar color = boxSelected /*box.selected*/ ? cv::Scalar(0, 255, 0) : cv::Scalar(255, 0, 0);
         // int thickness = boxSelected /*box.selected*/ ? 2 : 2;
         int thickness = 2;
 
@@ -584,6 +594,10 @@ void MainWindow::drawGraphicalObjects(cv::Mat &frame)
                     cv::Point(box.x, box.y - 5),
                     cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1);
         */
+
+        //qDebug() << _selectedID.count();
+
+
     }
 
     if (_appSet.DRAW_SIGHT)
@@ -1014,8 +1028,8 @@ void MainWindow::processUDPData(const QByteArray &data)
         box.track_id = track_id;
         box.selected = true;
         QString box_info = QString::number(track_id) + ": (" + QString::number(x) + ";" + QString::number(y) + ") [" + QString::number(w) + ";" + QString::number(h) + "]";
-        terminalInfo(box_info);
-        qDebug() << box_info;
+        //terminalInfo(box_info);
+        //qDebug() << box_info;
         _boxesMap[track_id] = box; // Добавляем бокс в карту
     }
     else if (data.size() == 1)
@@ -1029,7 +1043,7 @@ void MainWindow::processUDPData(const QByteArray &data)
             box.selected = false;
         }
 
-        emit updateTargetInfo((int)_boxesMap.count(), (int)_boxesMap.count());
+        emit updateTargetInfo((int)_boxesMap.count(), (int)_selectedID.count());
         _boxesMap.clear();
     }
     else
@@ -1045,7 +1059,7 @@ void MainWindow::processUDPData(const QByteArray &data)
 void MainWindow::updateTargetInfo(int targetcount, int activetargetcount)
 {
     ui->lbInfoPanelTargetTotalValue->setText(QString::number(targetcount));
-    ui->lbInfoPanelTargetActiveValue->setText(QString::number(targetcount));
+    ui->lbInfoPanelTargetActiveValue->setText(QString::number(activetargetcount));
 }
 void MainWindow::onPhotoButtonClicked()
 {
